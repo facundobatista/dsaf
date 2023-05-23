@@ -6,11 +6,11 @@ The Framework comprises three types of nodes (explained in detail below):
 
 1. Manager Node: This central node serves as the main administrative interface for a human operator. It allows the operator to manage all distributed sensors, inspect their data, and visualize information. The manager node typically runs on a desktop or headless computer and can be accessed through an API by third-party tools or via its web interface.
 
-2. Sensor Nodes: These nodes are responsible for generating and transmitting information. Multiple sensor nodes are deployed, each consisting of a specific sensor connected to a customized ESP32 system. The ESP32 system is equipped with the "distributed" part of the Framework.
+2. Sensor Nodes: *(note: phase 1 is about sensors; leaving actuators for phase 2)* These nodes are responsible for generating and transmitting information. Multiple sensor nodes are deployed, each consisting of a specific sensor connected to a customized ESP32 system. The ESP32 system is equipped with the "distributed" part of the Framework.
 
 3. Configurator Node: This node is responsible for configuring the network connection of the sensors. It is a single node implemented as an ESP32 hardware device that exposes a known network. The human operator can connect to the configurator node to set the "facility WiFi parameters." The configurator node then provides this information to the sensors at a specific time.
 
-FIXME [Graph illustrating the Framework's structure]
+![System Architecture](media/system.png)
 
 
 ## Functionality provided by the central management node includes:
@@ -60,21 +60,29 @@ FIXME [Graph illustrating the sensor node's cycle]
 FIXME [Graph illustrating the configurator node's cycle]
 
 
-## The setup process for adding a new sensor node to the network is as follows:
-    - Power up the sensor node and wait for the green LED to turn on.
-    - Bring the sensor node closer to the configurator node and press its button.
-    - Both the sensor and configurator nodes should start blinking.
-    - Allow a couple of seconds for the nodes to establish communication.
-    - If everything went well...
-        - the configurator should display a steady green light 
-        - the sensor node should enter "working" mode (a short blink every five seconds)
-    - On the other hand, if any issues arise:
-        - the configurator should fast blink for some seconds (the operator can connect to the configurator node via a browser to investigate).
-        - the sensor node should inform it as possible (see above the status table)
+## Setup process for adding a new sensor node to the network:
 
-In a future phase, the framework will be extended to include "actuators." While the overall process of establishing bidirectional communication, managing actuator code, and interfacing with humans will remain the same, changes will be made to enable bidirectional payload transfer. Further consideration is required for this extension.
+1. Power up the sensor node and wait for the green LED to turn on.
+1. Bring the sensor node closer to the configurator node and press its button.
+1. Both the sensor and configurator nodes should start blinking.
+1. Allow a couple of seconds for the nodes to establish communication.
+1. If everything went well...
+    - the configurator should display a steady green light 
+    - the sensor node should enter "working" mode (a short blink every five seconds)
+1. On the other hand, if any issues arise:
+    - the configurator should fast blink for some seconds (the operator can connect to the configurator node via a browser to investigate).
+    - the sensor node should inform it as possible (see above the status table)
+
+
+## Future
+
+As you may see in the texts above, everything is focused on getting "sensors" to work. In a future phase, the framework will be extended to include "actuators." 
+
+While the overall process of establishing bidirectional communication, managing actuator code, and interfacing with humans will remain the same, changes will be made to enable bidirectional payload transfer. 
+
+Further consideration is required for this extension.
 
 
 ## Licensing
 
-This Framework is free to use for any non-commercial use. Please contact me for different uses.
+This Framework is free to use for any non-commercial utilization. Please contact me for different uses.
