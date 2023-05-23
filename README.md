@@ -10,8 +10,9 @@ The Framework comprises three types of nodes (explained in detail below):
 
 3. Configurator Node: This node is responsible for configuring the network connection of the sensors. It is a single node implemented as an ESP32 hardware device that exposes a known network. The human operator can connect to the configurator node to set the "facility WiFi parameters." The configurator node then provides this information to the sensors at a specific time.
 
-![System Architecture](media/system.svg)
-
+<p align="center" width="100%">
+    <img width="80%" src="media/system.svg">
+</p>
 
 ## Functionality provided by the central management node includes:
 
