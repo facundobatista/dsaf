@@ -27,9 +27,9 @@
      inkscape:document-units="mm"
      showgrid="false"
      inkscape:snap-global="false"
-     inkscape:zoom="1"
-     inkscape:cx="-19"
-     inkscape:cy="113"
+     inkscape:zoom="2.602929"
+     inkscape:cx="313.493"
+     inkscape:cy="256.24979"
      inkscape:window-width="2560"
      inkscape:window-height="1333"
      inkscape:window-x="0"
@@ -596,19 +596,19 @@
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.2207px;line-height:1.25;font-family:Ubuntu;-inkscape-font-specification:'Ubuntu, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:center;text-anchor:middle;opacity:0.396699;stroke-width:0.080517"
-       x="57.767662"
-       y="57.799725"
+       x="56.245861"
+       y="57.043758"
        id="text7064-1-10-1"><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.2207px;font-family:Ubuntu;-inkscape-font-specification:'Ubuntu, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.080517"
-         x="57.767662"
-         y="57.799725"
+         x="56.245861"
+         y="57.043758"
          id="tspan31710-0">Nodes config</tspan><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.2207px;font-family:Ubuntu;-inkscape-font-specification:'Ubuntu, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.080517"
-         x="57.767662"
-         y="61.8256"
-         id="tspan32912">(once)</tspan></text>
+         x="56.245861"
+         y="61.069633"
+         id="tspan32912">(once each)</tspan></text>
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:10.089px;line-height:1.25;font-family:Ubuntu;-inkscape-font-specification:'Ubuntu, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:center;text-anchor:middle;fill:#3c5f49;fill-opacity:1;stroke-width:0.252222"

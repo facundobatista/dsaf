@@ -57,12 +57,12 @@ The Framework comprises three types of nodes (explained in detail below):
 - The sensor node can retrieve essential configuration information via the API, enabling it to communicate with the central node (primarily network name/password and central node domain name or IP). In the future, additional parameters such as port and encryption tokens may be included.
 - A green LED on the configurator node provides the following information:
     - Off: No power
-    - Short blink every 5 seconds: Listening mode
+    - Short blink every 5 seconds: Resting mode
     - Full on: Listening mode
     - Fast blink: Communication with a sensor; returns to listening mode if successful; otherwise, enters a 5-times 1-second square waveform blinking sequence before returning to listening mode.
 
 <p align="center" width="100%">
-    <img width="80%" src="media/configurator-cycle.svg">
+    <img width="50%" src="media/configurator-cycle.svg">
 </p>
 
 
