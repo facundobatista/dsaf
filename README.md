@@ -39,10 +39,12 @@ The Framework comprises three types of nodes (explained in detail below):
     | Short blink every 5 seconds | Off | Working normally; server communication is fine |
     | 300 ms square waveform blink | Off | Configurator detected; actively working with it |
     | 1.5 s square waveform blink | Short N times blinks every 3 seconds | N=1: No configuration; N=2: No network or no response from server |
-    | 1.5 s square waveform blink | Full on | Complex error; full details reported to the central node |
+    | 1.5 s square waveform blink | Full on | Unknown error; full details reported to the central node |
     | 2 s square waveform blink | 2 s square waveform blink | Battery critically low |
 
-FIXME [Graph illustrating the sensor node's cycle]
+<p align="center" width="100%">
+    <img width="80%" src="media/distributed-cycle.svg">
+</p>
 
 ## Key features of the configurator node:
 
@@ -54,11 +56,14 @@ FIXME [Graph illustrating the sensor node's cycle]
     - Access a history of device interactions and related information for each device.
 - The sensor node can retrieve essential configuration information via the API, enabling it to communicate with the central node (primarily network name/password and central node domain name or IP). In the future, additional parameters such as port and encryption tokens may be included.
 - A green LED on the configurator node provides the following information:
-    - Off: Rest mode
+    - Off: No power
+    - Short blink every 5 seconds: Listening mode
     - Full on: Listening mode
     - Fast blink: Communication with a sensor; returns to listening mode if successful; otherwise, enters a 5-times 1-second square waveform blinking sequence before returning to listening mode.
 
-FIXME [Graph illustrating the configurator node's cycle]
+<p align="center" width="100%">
+    <img width="80%" src="media/configurator-cycle.svg">
+</p>
 
 
 ## Setup process for adding a new sensor node to the network:
