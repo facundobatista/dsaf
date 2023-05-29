@@ -1,6 +1,6 @@
 # Distributed Sensors and Actuators Framework
 
-The primary objective of this Framework is to enable the distribution of sensors throughout a facility, regardless of its size (such as a machine or a house), while maximizing the simplicity of sensor installation and data collection.
+The primary objective of this Framework is to enable the distribution of sensors/actuators throughout a facility, regardless of its size (such as a machine or a house), while maximizing the simplicity of sensor installation and data collection.
 
 The Framework comprises three types of nodes (explained in detail below):
 
@@ -14,7 +14,7 @@ The Framework comprises three types of nodes (explained in detail below):
     <img width="80%" src="media/system.svg">
 </p>
 
-## Functionality provided by the central management node includes:
+## Functionality provided by the central Manager node includes:
 
 - Viewing the list of active sensors, their status, and reported data history.
 - Managing sensors by changing the code that handles them, pinging the nodes, and requesting data refresh.
@@ -23,7 +23,7 @@ The Framework comprises three types of nodes (explained in detail below):
 - Monitoring the status and health of the configurator node.
 
 
-## Key features of each sensor node:
+## Key features of each distributed node:
 
 - Automatic reporting of the node's "health" status, battery level, server ping time, etc.
 - Periodic execution of the code that handles the sensor, returning multiple data points to the central node.
@@ -46,7 +46,7 @@ The Framework comprises three types of nodes (explained in detail below):
     <img width="80%" src="media/distributed-cycle.svg">
 </p>
 
-## Key features of the configurator node:
+## Key features of the Configurator node:
 
 - Exposes a well-known WiFi network and accepts connections on port 80 (for humans) and other ports (for sensors).
 - Pressing a button enables WiFi and triggers the configurator node to enter "listening mode." If there is no interaction with the device for 5 seconds, it returns to "rest mode."
