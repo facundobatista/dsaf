@@ -16,21 +16,21 @@ The Framework comprises three types of nodes (explained in detail below):
 
 ## Functionality provided by the central Manager node includes:
 
-- Viewing the list of active sensors, their status, and reported data history.
-- Managing sensors by changing the code that handles them, pinging the nodes, and requesting data refresh.
-- Providing an elegant visualization of the reported information (similar to "Grafana").
-- Offering an API to allow third-party applications to consume the information.
-- Monitoring the status and health of the configurator node.
+- ☐ Viewing the list of active sensors, their status, and reported data history.
+- ☐ Managing sensors by changing the code that handles them, pinging the nodes, and requesting data refresh.
+- ☐ Providing an elegant visualization of the reported information (similar to "Grafana").
+- ☐ Offering an API to allow third-party applications to consume the information.
+- ☐ Monitoring the status and health of the configurator node.
 
 
 ## Key features of each distributed node:
 
-- Automatic reporting of the node's "health" status, battery level, server ping time, etc.
-- Periodic execution of the code that handles the sensor, returning multiple data points to the central node.
-- Ability to receive and "hot swap" Python code specific to the sensor's use.
-- Support for robust rebooting, triggered by battery changes or other reasons.
-- Initiating communication with the configurator node when in "blank started" mode or during the first two seconds after reboot.
-- Status information is conveyed through LEDs near the sensor. The LEDs display the following indications:
+- ☐ Automatic reporting of the node's "health" status, battery level, server ping time, etc.
+- ☐ Periodic execution of the code that handles the sensor, returning multiple data points to the central node.
+- ☐ Ability to receive and "hot swap" Python code specific to the sensor's use.
+- ☐ Support for robust rebooting, triggered by battery changes or other reasons.
+- ☐ Initiating communication with the configurator node when in "blank started" mode or during the first two seconds after reboot.
+- ☐ Status information is conveyed through LEDs near the sensor. The LEDs display the following indications:
 
     | Green LED | Blue LED | Meaning |
     | --- | --- | --- |
@@ -48,14 +48,14 @@ The Framework comprises three types of nodes (explained in detail below):
 
 ## Key features of the Configurator node:
 
-- Exposes a well-known WiFi network and accepts connections on port 80 (for humans) and other ports (for sensors).
-- Pressing a button enables WiFi and triggers the configurator node to enter "listening mode." If there is no interaction with the device for 5 seconds, it returns to "rest mode."
-- Provides a user-friendly web page accessible via the device's WiFi network. The operator can connect their laptop to the device's WiFi and use a browser to access the web page.
-- Through the web page, the operator can:
+- ☐ Exposes a well-known WiFi network and accepts connections on port 80 (for humans) and other ports (for sensors).
+- ☐ Pressing a button enables WiFi and triggers the configurator node to enter "listening mode." If there is no interaction with the device for 5 seconds, it returns to "rest mode."
+- ☐ Provides a user-friendly web page accessible via the device's WiFi network. The operator can connect their laptop to the device's WiFi and use a browser to access the web page.
+- ☐ Through the web page, the operator can:
     - Configure the system, including the network to connect to (with password) and the IP/name of the central node, among other settings.
     - Access a history of device interactions and related information for each device.
-- The sensor node can retrieve essential configuration information via the API, enabling it to communicate with the central node (primarily network name/password and central node domain name or IP). In the future, additional parameters such as port and encryption tokens may be included.
-- A green LED on the configurator node provides the following information:
+- ☐ The sensor node can retrieve essential configuration information via the API, enabling it to communicate with the central node (primarily network name/password and central node domain name or IP). In the future, additional parameters such as port and encryption tokens may be included.
+- ☐ A green LED on the configurator node provides the following information:
     - Off: No power
     - Short blink every 5 seconds: Resting mode
     - Full on: Listening mode

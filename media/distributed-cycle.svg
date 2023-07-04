@@ -27,15 +27,15 @@
      inkscape:document-units="mm"
      showgrid="false"
      inkscape:snap-global="false"
-     inkscape:zoom="1"
-     inkscape:cx="254"
-     inkscape:cy="173"
-     inkscape:window-width="2560"
-     inkscape:window-height="1333"
-     inkscape:window-x="0"
-     inkscape:window-y="40"
-     inkscape:window-maximized="1"
-     inkscape:current-layer="layer1"
+     inkscape:zoom="1.4142136"
+     inkscape:cx="2.8284271"
+     inkscape:cy="346.48232"
+     inkscape:window-width="1940"
+     inkscape:window-height="1073"
+     inkscape:window-x="-80"
+     inkscape:window-y="120"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="g1743"
      fit-margin-top="10"
      lock-margins="true"
      fit-margin-left="10"
@@ -654,7 +654,7 @@
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.11667px;font-family:Ubuntu;-inkscape-font-specification:'Ubuntu, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.0734629"
          x="91.994568"
          y="91.513687"
-         id="tspan38685-0">Boot OK</tspan></text>
+         id="tspan38685-0">Init OK</tspan></text>
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.11667px;line-height:1.25;font-family:Ubuntu;-inkscape-font-specification:'Ubuntu, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:center;text-anchor:middle;opacity:0.499798;stroke-width:0.0734629"
@@ -764,74 +764,67 @@
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.35377px;line-height:1.25;font-family:Ubuntu;-inkscape-font-specification:'Ubuntu, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:center;text-anchor:middle;stroke-width:0.0588437"
-       x="106.76733"
-       y="133.55374"
+       x="187.11002"
+       y="136.74419"
        id="text7064-1-10-6-9-48-6"><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.35377px;font-family:Ubuntu;-inkscape-font-specification:'Ubuntu, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.0588437"
-         x="106.76733"
-         y="133.55374"
+         x="187.11002"
+         y="136.74419"
          id="tspan49024-10-4">?</tspan></text>
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.11667px;line-height:1.25;font-family:Ubuntu;-inkscape-font-specification:'Ubuntu, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:center;text-anchor:middle;stroke-width:0.0588437"
-       x="129.06621"
-       y="154.61845"
+       x="165.52541"
+       y="151.27927"
        id="text7064-1-10-6-9-0"><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.11667px;font-family:Ubuntu;-inkscape-font-specification:'Ubuntu, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.0588437"
-         x="129.06621"
-         y="154.61845"
-         id="tspan38685-2-4">Human inspection</tspan><tspan
+         x="165.52541"
+         y="151.27927"
+         id="tspan38685-2-4">Can arrive to this node</tspan><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.11667px;font-family:Ubuntu;-inkscape-font-specification:'Ubuntu, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.0588437"
-         x="129.06621"
-         y="157.2643"
+         x="165.52541"
+         y="153.92511"
+         id="tspan9495">from any of the others</tspan><tspan
+         sodipodi:role="line"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.11667px;font-family:Ubuntu;-inkscape-font-specification:'Ubuntu, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.0588437"
+         x="165.52541"
+         y="156.57094"
+         id="tspan9497" /><tspan
+         sodipodi:role="line"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.11667px;font-family:Ubuntu;-inkscape-font-specification:'Ubuntu, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.0588437"
+         x="165.52541"
+         y="159.21678"
+         id="tspan9493">Human inspection</tspan><tspan
+         sodipodi:role="line"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.11667px;font-family:Ubuntu;-inkscape-font-specification:'Ubuntu, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.0588437"
+         x="165.52541"
+         y="161.86261"
          id="tspan49022-0">needed in the</tspan><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.11667px;font-family:Ubuntu;-inkscape-font-specification:'Ubuntu, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.0588437"
-         x="129.06621"
-         y="159.91013"
+         x="165.52541"
+         y="164.50845"
          id="tspan49024-8">management node</tspan></text>
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.11667px;line-height:1.25;font-family:Ubuntu;-inkscape-font-specification:'Ubuntu, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:center;text-anchor:middle;stroke-width:0.0588437"
-       x="157.32314"
-       y="-54.328159"
+       x="-29.366652"
+       y="163.37607"
        id="text7064-1-10-6-9-0-5"
-       transform="rotate(73.107065)"><tspan
+       transform="rotate(-43.988045)"><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.11667px;font-family:Ubuntu;-inkscape-font-specification:'Ubuntu, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.0588437"
-         x="157.32314"
-         y="-54.328159"
-         id="tspan57911">May not be</tspan><tspan
+         x="-29.366652"
+         y="163.37607"
+         id="tspan57915">Closely related:it still works</tspan><tspan
          sodipodi:role="line"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.11667px;font-family:Ubuntu;-inkscape-font-specification:'Ubuntu, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.0588437"
-         x="157.32314"
-         y="-51.682323"
-         id="tspan60455">automatically</tspan><tspan
-         sodipodi:role="line"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.11667px;font-family:Ubuntu;-inkscape-font-specification:'Ubuntu, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.0588437"
-         x="157.32314"
-         y="-49.036484"
-         id="tspan57915">recovered</tspan></text>
-    <text
-       xml:space="preserve"
-       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.11667px;line-height:1.25;font-family:Ubuntu;-inkscape-font-specification:'Ubuntu, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:center;text-anchor:middle;opacity:0.499798;stroke-width:0.0588437"
-       x="-63.657612"
-       y="168.97925"
-       id="text7064-1-10-6-9-4"
-       transform="rotate(-73.127079)"><tspan
-         sodipodi:role="line"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.11667px;font-family:Ubuntu;-inkscape-font-specification:'Ubuntu, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.0588437"
-         x="-63.657612"
-         y="168.97925"
-         id="tspan49024-1">Bad config?</tspan><tspan
-         sodipodi:role="line"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.11667px;font-family:Ubuntu;-inkscape-font-specification:'Ubuntu, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.0588437"
-         x="-63.657612"
-         y="171.62509"
-         id="tspan50878">Server down?</tspan></text>
+         x="-29.366652"
+         y="166.02191"
+         id="tspan10650">normally when battery low</tspan></text>
     <path
        style="fill:none;stroke:#000000;stroke-width:0.4;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-start:url(#marker30429-4)"
        d="M 91.608238,63.303355 68.328185,55.550026"
@@ -858,11 +851,6 @@
        id="path30337-2-7-3"
        sodipodi:nodetypes="cc" />
     <path
-       style="opacity:0.499798;fill:none;stroke:#000000;stroke-width:0.4;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-start:url(#marker30429-4-1-8)"
-       d="m 145.07797,121.97414 5.45607,-20.94783"
-       id="path30337-2-7-7"
-       sodipodi:nodetypes="cc" />
-    <path
        style="fill:none;stroke:#000000;stroke-width:0.4;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-start:url(#marker30429-4-1-9)"
        d="M 98.263126,101.13497 100.09858,77.563936"
        id="path30337-2-7-9"
@@ -884,13 +872,8 @@
        sodipodi:nodetypes="cc" />
     <path
        style="fill:none;stroke:#000000;stroke-width:0.4;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-start:url(#marker30429-4-83)"
-       d="m 109.03579,146.13518 -7.60256,-25.77527"
+       d="M 187.12587,148.35403 184.26459,132.3086"
        id="path30337-2-93"
-       sodipodi:nodetypes="cc" />
-    <path
-       style="fill:none;stroke:#000000;stroke-width:0.4;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:0.4, 1.6;stroke-dashoffset:0;stroke-opacity:1;marker-start:url(#marker30429-4-78)"
-       d="m 96.564279,120.49781 7.488941,26.08717"
-       id="path30337-2-1"
        sodipodi:nodetypes="cc" />
     <g
        id="g39378"
@@ -942,7 +925,7 @@
     </g>
     <g
        id="g28558"
-       transform="translate(161.79626,26.902831)">
+       transform="translate(239.88634,29.121677)">
       <text
          xml:space="preserve"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.96392px;line-height:1.25;font-family:Ubuntu;-inkscape-font-specification:'Ubuntu, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:center;text-anchor:middle;stroke-width:0.0990972"
@@ -1005,31 +988,30 @@
          ry="5.3601379" />
     </g>
     <g
-       id="g38876"
-       transform="translate(12.919108,-6.197385)">
+       id="g1743">
       <text
          xml:space="preserve"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.96392px;line-height:1.25;font-family:Ubuntu;-inkscape-font-specification:'Ubuntu, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:center;text-anchor:middle;stroke-width:0.0990972"
-         x="86.219131"
-         y="116.27653"
+         x="99.138237"
+         y="110.07914"
          id="text7064-1-3-90"><tspan
            sodipodi:role="line"
            id="tspan7062-3-3-3"
            style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.96392px;font-family:Ubuntu;-inkscape-font-specification:'Ubuntu, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.0990972"
-           x="86.219131"
-           y="116.27653">Working</tspan><tspan
+           x="99.138237"
+           y="110.07914">Working</tspan><tspan
            sodipodi:role="line"
            style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.96392px;font-family:Ubuntu;-inkscape-font-specification:'Ubuntu, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.0990972"
-           x="86.219131"
-           y="121.23143"
+           x="99.138237"
+           y="115.03404"
            id="tspan4410">OK</tspan></text>
       <rect
          style="font-variation-settings:normal;fill:none;fill-opacity:1;stroke:#0000ff;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;stop-color:#000000"
          id="rect1216-3"
          width="17.782265"
          height="17.782265"
-         x="77.224937"
-         y="108.35458"
+         x="90.144043"
+         y="102.1572"
          rx="5.3601379"
          ry="5.3601379" />
     </g>
@@ -1063,31 +1045,30 @@
          ry="5.3601379" />
     </g>
     <g
-       id="g28580"
-       transform="translate(117.70906,-4.9650638)">
+       id="g1737">
       <text
          xml:space="preserve"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.96392px;line-height:1.25;font-family:Ubuntu;-inkscape-font-specification:'Ubuntu, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:center;text-anchor:middle;stroke-width:0.0990972"
-         x="-53.978939"
-         y="147.36148"
+         x="63.730122"
+         y="142.39642"
          id="text7064-1-3-6"><tspan
            sodipodi:role="line"
            id="tspan7062-3-3-5"
            style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.96392px;font-family:Ubuntu;-inkscape-font-specification:'Ubuntu, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.0990972"
-           x="-53.978939"
-           y="147.36148">Battery</tspan><tspan
+           x="63.730122"
+           y="142.39642">Battery</tspan><tspan
            sodipodi:role="line"
            style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.96392px;font-family:Ubuntu;-inkscape-font-specification:'Ubuntu, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.0990972"
-           x="-53.978939"
-           y="152.31638"
+           x="63.730122"
+           y="147.35132"
            id="tspan20874">low</tspan></text>
       <rect
-         style="font-variation-settings:normal;fill:none;fill-opacity:1;stroke:#ff0000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;stop-color:#000000"
+         style="font-variation-settings:normal;fill:none;fill-opacity:1;stroke:#0000ff;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;stop-color:#000000;opacity:1;vector-effect:none;-inkscape-stroke:none;stop-opacity:1"
          id="rect1216-2"
          width="17.782265"
          height="17.782265"
-         x="-62.735298"
-         y="139.5862"
+         x="54.973763"
+         y="134.62114"
          rx="5.3601379"
          ry="5.3601379" />
     </g>
@@ -1453,7 +1434,7 @@
     </g>
     <g
        id="g99675"
-       transform="matrix(0.44861079,0,0,0.44861079,124.58052,100.09051)">
+       transform="matrix(0.44861079,0,0,0.44861079,202.6706,102.30936)">
       <g
          id="g99651"
          transform="translate(-7.5792046,1.7717971)">
@@ -1540,5 +1521,13 @@
            d="m 101.55353,62.638241 a 7.6573777,7.6573777 0 0 1 -3.828693,6.631484 7.6573777,7.6573777 0 0 1 -7.657377,-10e-7 7.6573777,7.6573777 0 0 1 -3.828689,-6.631483" />
       </g>
     </g>
+    <ellipse
+       style="font-variation-settings:normal;opacity:1;vector-effect:none;fill:none;fill-opacity:1;stroke:#000030;stroke-width:0.393363;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:0.393363, 1.57346;stroke-dashoffset:0;stroke-opacity:1;-inkscape-stroke:none;stop-color:#000000;stop-opacity:1"
+       id="path8445"
+       cx="-209.41063"
+       cy="198.005"
+       rx="42.13578"
+       ry="32.488132"
+       transform="matrix(0.5197706,-0.85430587,0.96521569,-0.26145491,0,0)" />
   </g>
 </svg>

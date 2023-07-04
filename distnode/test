@@ -1,0 +1,2 @@
+#!/bin/sh
+PYTHONPATH=.:src fades -d pytest -x pytest tests/
