@@ -256,7 +256,7 @@ def test_deinit_twice():
         multitimer.deinit(timer_id)
 
 
-def test_callback_robustness(capsys):
+def test_callback_robustness(logcheck):
     """Callback should always be called, even if fails sometimes."""
     calls_record = 0
 
@@ -276,10 +276,7 @@ def test_callback_robustness(capsys):
 
     # this one will explode
     multitimer.tick()
-    captured = capsys.readouterr()
-    assert captured.out == (
-        f"Error when calling callback from timer {timer_id}: ValueError('oops')\n"
-    )
+    logcheck(f"Error when calling callback from timer {timer_id}: ValueError('oops')")
     assert calls_record == 3
 
     # life just goes on

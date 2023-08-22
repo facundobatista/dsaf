@@ -3,6 +3,8 @@
 
 """A multi-timer based on a unique hardware timer."""
 
+from src import logger
+
 
 # tick in milliseconds
 TICK_DELAY = 100
@@ -51,7 +53,7 @@ class _Timer:
         except Exception as exc:
             # inform the error but consume the exception otherwise will interrupt
             # the timers machinery
-            print(f"Error when calling callback from timer {self.timer_id}: {exc!r}")
+            logger.error("Error when calling callback from timer {}: {!r}", self.timer_id, exc)
 
         # if it was one shot now it's expired
         if not self.is_periodic:

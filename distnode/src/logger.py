@@ -12,6 +12,11 @@ def _log(template, *params):
     print(f"{sec:>8s}.{ms}  {text}")
 
 
+def error(template, *params):
+    # XXX validate level
+    _log(template, *params)
+
+
 def info(template, *params):
     # XXX validate level
     _log(template, *params)
