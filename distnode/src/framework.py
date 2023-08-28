@@ -5,7 +5,7 @@
 
 import time
 
-import logger
+from src import logger, multitimer
 
 
 class FrameworkFSM:
@@ -59,24 +59,24 @@ class FrameworkFSM:
             (True, [200, 4800]),
             (False, False),
         ),
-        # 1.5 s square waveform blink | Short 1 time blink every 3 seconds
+        # 1.5 s ~square waveform blink | Short 1 time blink every 3 seconds
         ST_ERROR_NO_CONFIG: (
-            (True, [1500, 1500]),
+            (True, [1400, 1600]),
             (True, [200, 2800]),
         ),
-        # 300 ms square waveform blink | Off | Configurator detected; actively working with it |
+        # 200 ms square waveform blink | Off | Configurator detected; actively working with it |
         ST_LOADING_CONFIG: (
-            (True, [300, 300]),
+            (True, [200, 200]),
             (False, False),
         ),
-        # 1.5 s square waveform blink | Short 2 times blinks every 3 seconds
+        # 1.5 s ~square waveform blink | Short 2 times blinks every 3 seconds
         ST_ERROR_NO_SERVER: (
-            (True, [1500, 1500]),
+            (True, [1400, 1600]),
             (True, [200, 400, 200, 2200]),
         ),
-        # 1.5 s square waveform blink | Full on
+        # 1.5 s ~square waveform blink | Full on
         ST_ERROR_UNKNOWN: (
-            (True, [1500, 1500]),
+            (True, [1400, 1600]),
             (False, True),
         ),
         # 2 s square waveform blink | 2 s square waveform blink
@@ -101,6 +101,19 @@ class FrameworkFSM:
         self.sensor_manager = None
         self.network_manager = network_manager
         self.sensor_class = sensor_class
+
+        # set up status sending to the server every 10s
+        host, port = self.config['manager-host'], self.config['manager-port']
+        self.status_url = f"http://{host}:{port}/v1/status/"
+        multitimer.Timer().init(period=10000, mode=multitimer.PERIODIC, callback=self._send_status)
+
+    def _send_status(self, _):
+        """Send status information to the server."""
+        # prepare the status
+        payload = {"foo": 3}  # XXX: better info! ping time to server and current datetime
+
+        # send it to the manager
+        self.network_manager.hit(self.status_url, payload)
 
     def _set_led(self, led, status):
         """Set a led to a specific status."""
@@ -177,6 +190,7 @@ class FrameworkFSM:
         while True:
             time.sleep(2)
             data = self.sensor_manager.get()
+            # XXX: support network error (NetworkManagerError, and transition to other state)
             response = self.network_manager.hit(url, data)
             logger.debug("Server response: {}", response)
 
@@ -193,6 +207,10 @@ class FrameworkFSM:
     def handle_server_error(self):
         """Handle a miscomunication to the server."""
         # XXX: to be implemented
+        #  - sleep a couple of seconds
+        #  - try if server is fine (hit it with a HEAD or something)
+        #  - if yes, return transition to steady state
+        #  - if not (NetworkManagerError), GOTO 10
 
     def handle_unknown_error(self, exc):
         """Handle a generic unknown error."""

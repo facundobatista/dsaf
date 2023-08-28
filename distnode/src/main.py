@@ -8,14 +8,16 @@ import time
 from urllib import urequest
 
 import machine
+import micropython
 import network
 
-import logger
-from framework import FrameworkFSM
-from sensor import ExampleSensorManager
+from src import logger
+from src import multitimer
+from src.framework import FrameworkFSM
+from src.sensor import ExampleSensorManager
 
-
-timer = machine.Timer(-1)
+# recommended for systems that handles ISR
+micropython.alloc_emergency_exception_buf(100)
 
 
 class Led:
@@ -25,6 +27,7 @@ class Led:
         self.led = machine.Pin(2, machine.Pin.OUT)  # "active low"; IOW "inversed"
         self.blink_idx = None
         self.blink_on = None
+        self.timer = multitimer.Timer()
 
     def set(self, on):
         """Turn on (on=True) or off (on=False) the led permanently."""
@@ -41,8 +44,11 @@ class Led:
         - time in milliseconds
         - the sequence must be of even quantity of values
         """
+        if len(delays_sequence) % 2:
+            raise ValueError("The sequence must be of even quantity of values")
+
         # cancel any previous blinking
-        timer.deinit()
+        self.timer.deinit()
 
         self.blink_on = False  # starts with ligth on (inversed!)
         self.blink_idx = 0
@@ -52,29 +58,16 @@ class Led:
                 self.led.on()
             else:
                 self.led.off()
-            delay = delays_sequence[self.blink_idx]
-
             self.blink_on = not self.blink_on
+
+            delay = delays_sequence[self.blink_idx]
             self.blink_idx += 1
             if self.blink_idx == len(delays_sequence):
                 self.blink_idx = 0
 
-            timer.init(period=delay, mode=machine.Timer.ONE_SHOT, callback=_step)
+            self.timer.init(period=delay, mode=multitimer.ONE_SHOT, callback=_step)
 
         _step(None)
-
-
-# XXX: to be used in the future
-# def send_status(_):
-#     """Send status information to the server."""
-#     # prepare the status
-#     payload = {"foo": 3}  # XXX: better info! ping time to server and current datetime
-#
-#     # send it to the manager
-#     url = "http://{manager-host}:{manager-port}/v1/status/".format_map(config)
-#     encoded_payload = json.dumps(payload).encode("ascii")
-#     req = request.Request(url, method="POST", data=encoded_payload, headers=JSON_CT)
-#     request.urlopen(req)  # XXX support errors here
 
 
 class NetworkManager:
@@ -115,15 +108,50 @@ class NetworkManager:
                 resp = urequest.urlopen(url, data=data)
             else:
                 raise
-
+            # XXX: also support server down
+            #       OSError(104,)
+            #       raise NetworkManagerError specific thing
         content = resp.read()
         resp.close()
         return content
 
 
-logger.info("Start")
-# XXX: use an external led for this!
-green_led = Led(2)
+machine_timer = machine.Timer(-1)
 
-fsm = FrameworkFSM(NetworkManager(), ExampleSensorManager, green_led)
-fsm.loop()
+
+def timer_second_hook(_):
+    """Secondary timer hook, not called directly but scheduled.
+
+    This one is the one exercising machinery, as it's allowed to create objects, etc.
+    """
+    multitimer.tick()
+    # XXX don't use always TICK_DELAY, but itself reduced by the time used in multitimer ticking
+    # (so it effectively is called later in TICK_DELAY and no drift happens)
+    machine_timer.init(
+        period=multitimer.TICK_DELAY,
+        mode=machine.Timer.ONE_SHOT,
+        callback=timer_main_hook)
+
+
+def timer_main_hook(_):
+    """Main timer hook, called by hardware.
+
+    This one MUST do almost nothing, but just schedule the second hook.
+    """
+    micropython.schedule(timer_second_hook, None)
+
+
+def run():
+    """Set up everything and run."""
+    logger.info("Start")
+    # XXX: use an external led for this!
+    green_led = Led(2)
+
+    # hook the machine timer
+    machine_timer.init(
+        period=multitimer.TICK_DELAY,
+        mode=machine.Timer.ONE_SHOT,
+        callback=timer_main_hook)
+
+    fsm = FrameworkFSM(NetworkManager(), ExampleSensorManager, green_led)
+    fsm.loop()
