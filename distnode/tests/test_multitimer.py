@@ -163,18 +163,18 @@ def test_multiple_two_oneshots(call_counter):
     multitimer.tick()
     assert call_counter.calls == []
     multitimer.tick()
-    assert call_counter.calls == [timer1.id]
+    assert call_counter.calls == [timer1]
 
     multitimer.tick()
-    assert call_counter.calls == [timer1.id]
+    assert call_counter.calls == [timer1]
     multitimer.tick()
-    assert call_counter.calls == [timer1.id]
+    assert call_counter.calls == [timer1]
     multitimer.tick()
-    assert call_counter.calls == [timer1.id, timer2.id]
+    assert call_counter.calls == [timer1, timer2]
 
     for _ in range(10):
         multitimer.tick()
-    assert call_counter.calls == [timer1.id, timer2.id]
+    assert call_counter.calls == [timer1, timer2]
 
 
 def test_multiple_two_periodics(call_counter):
@@ -188,17 +188,17 @@ def test_multiple_two_periodics(call_counter):
     multitimer.tick()
     assert call_counter.calls == []
     multitimer.tick()
-    assert call_counter.calls == [timer1.id]
+    assert call_counter.calls == [timer1]
 
     multitimer.tick()
-    assert call_counter.calls == [timer1.id]
+    assert call_counter.calls == [timer1]
     multitimer.tick()
-    assert call_counter.calls == [timer1.id, timer1.id]
+    assert call_counter.calls == [timer1, timer1]
 
     multitimer.tick()
-    assert call_counter.calls == [timer1.id, timer1.id, timer2.id]
+    assert call_counter.calls == [timer1, timer1, timer2]
     multitimer.tick()
-    assert call_counter.calls == [timer1.id, timer1.id, timer2.id, timer1.id]
+    assert call_counter.calls == [timer1, timer1, timer2, timer1]
 
 
 def test_multiple_mixed_with_deinit(call_counter):
@@ -214,23 +214,43 @@ def test_multiple_mixed_with_deinit(call_counter):
     multitimer.tick()
     assert call_counter.calls == []
     multitimer.tick()
-    assert call_counter.calls == [timer1.id]
+    assert call_counter.calls == [timer1]
 
     multitimer.tick()
-    assert call_counter.calls == [timer1.id, timer2.id]
+    assert call_counter.calls == [timer1, timer2]
     multitimer.tick()
-    assert call_counter.calls == [timer1.id, timer2.id, timer1.id]
+    assert call_counter.calls == [timer1, timer2, timer1]
 
     multitimer.tick()
-    assert call_counter.calls == [timer1.id, timer2.id, timer1.id, timer3.id]
+    assert call_counter.calls == [timer1, timer2, timer1, timer3]
     timer1.deinit()
     multitimer.tick()
-    assert call_counter.calls == [timer1.id, timer2.id, timer1.id, timer3.id]
+    assert call_counter.calls == [timer1, timer2, timer1, timer3]
 
     for _ in range(10):
         multitimer.tick()
-    assert call_counter.calls == [timer1.id, timer2.id, timer1.id, timer3.id]
+    assert call_counter.calls == [timer1, timer2, timer1, timer3]
 
+
+def test_reentrant_oneshot():
+    """The timer is set again in the same function being called."""
+    calls = []
+
+    def callback(timer):
+        calls.append(timer)
+        if len(calls) == 1:
+            timer.init(period=multitimer.TICK_DELAY, mode=multitimer.ONE_SHOT, callback=callback)
+
+    timer = multitimer.Timer()
+    timer.init(period=multitimer.TICK_DELAY, mode=multitimer.ONE_SHOT, callback=callback)
+
+    multitimer.tick()
+    assert calls == [timer]
+    multitimer.tick()
+    assert calls == [timer, timer]
+
+
+# -- error cases
 
 @pytest.mark.parametrize("period", [123.15, 0, -3])
 def test_init_bad_period(period):
@@ -315,7 +335,7 @@ def test_callback_robustness(logcheck):
 
     # this one will explode
     multitimer.tick()
-    logcheck(f"Error when calling callback from timer {timer.id}: ValueError('oops')")
+    logcheck(f"Error when calling callback from timer {timer._id}: ValueError('oops')")
     assert calls_record == 3
 
     # life just goes on

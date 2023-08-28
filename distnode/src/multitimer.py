@@ -7,7 +7,7 @@ from src import logger
 
 
 # tick in milliseconds
-TICK_DELAY = 100
+TICK_DELAY = 200
 
 # modes of working
 ONE_SHOT = "oneshot"
@@ -35,14 +35,14 @@ class Timer:
     _get_timer_id = _ints_generator()
 
     def __init__(self):
-        self.id = next(self._get_timer_id)
+        self._id = next(self._get_timer_id)
 
     def init(self, period, mode, callback):
         """Initiates the timer.
 
         Period is in milliseconds and must be a multiple of TICK_DELAY.
         """
-        if self.id in _timers:
+        if self._id in _timers:
             raise RuntimeError("Attempted to init a timer while it was working.""")
 
         ticks_period, period_rest = divmod(period, TICK_DELAY)
@@ -56,11 +56,11 @@ class Timer:
             raise ValueError("Mode must be ONE_SHOT or PERIODIC")
 
         self.callback = callback
-        _timers[self.id] = self
+        _timers[self._id] = self
 
     def deinit(self):
         """Deactivate/disable/remove a timer."""
-        _timers.pop(self.id, None)
+        _timers.pop(self._id, None)
 
     def _tick(self):
         """Tick this timer.
@@ -72,21 +72,19 @@ class Timer:
         if self.remaining_ticks:
             return
 
-        # time to call!
+        # reset the counter if periodic; if oneshot just finish it
+        if self.is_periodic:
+            self.remaining_ticks = self.ticks_period
+        else:
+            self.deinit()
+
+        # finally call the function
         try:
-            self.callback(self.id)
+            self.callback(self)
         except Exception as exc:
             # inform the error but consume the exception otherwise will interrupt
             # the timers machinery
-            logger.error("Error when calling callback from timer {}: {!r}", self.id, exc)
-
-        # if it was one shot now it's expired
-        if not self.is_periodic:
-            self.deinit()
-            return
-
-        # else just reset the counter
-        self.remaining_ticks = self.ticks_period
+            logger.error("Error when calling callback from timer {}: {!r}", self._id, exc)
 
 
 def tick():
