@@ -1,4 +1,4 @@
-# Copyright 2023 Facundo Batista
+# Copyright 2023-2024 Facundo Batista
 # https://github.com/facundobatista/dsaf
 
 """Tests for the multi timer."""
@@ -19,8 +19,8 @@ class _CallCounter:
         """Return the count of total calls."""
         return len(self.calls)
 
-    def __call__(self, timer_id):
-        self.calls.append(timer_id)
+    def __call__(self, timer):
+        self.calls.append(timer)
 
 
 @pytest.fixture
@@ -30,9 +30,9 @@ def call_counter():
 
 
 @pytest.fixture(autouse=True)
-def timer_cleaner():
-    """Automatically clean timers from any run test."""
-    multitimer._timers.clear()
+def structures_cleaner():
+    """Automatically clean structures from any run test."""
+    multitimer._timer_manager = multitimer._TimerManager()
 
 
 def test_simple_oneshot_fast(call_counter):
@@ -250,6 +250,40 @@ def test_reentrant_oneshot():
     assert calls == [timer, timer]
 
 
+def test_reentrant_deinit_oneshot():
+    """The oneshot timer is deinited while being called."""
+    calls = []
+
+    def callback(timer):
+        calls.append(timer)
+        timer.deinit()
+
+    timer = multitimer.Timer()
+    timer.init(period=multitimer.TICK_DELAY, mode=multitimer.ONE_SHOT, callback=callback)
+
+    multitimer.tick()
+    assert calls == [timer]
+    multitimer.tick()
+    assert calls == [timer]
+
+
+def test_reentrant_deinit_periodic():
+    """The periodic timer is deinited while being called."""
+    calls = []
+
+    def callback(timer):
+        calls.append(timer)
+        timer.deinit()
+
+    timer = multitimer.Timer()
+    timer.init(period=multitimer.TICK_DELAY, mode=multitimer.PERIODIC, callback=callback)
+
+    multitimer.tick()
+    assert calls == [timer]
+    multitimer.tick()
+    assert calls == [timer]
+
+
 # -- error cases
 
 @pytest.mark.parametrize("period", [123.15, 0, -3])
@@ -335,9 +369,44 @@ def test_callback_robustness(logcheck):
 
     # this one will explode
     multitimer.tick()
-    logcheck(f"Error when calling callback from timer {timer._id}: ValueError('oops')")
+    logcheck(f"Error when calling callback from timer {timer._name}: ValueError('oops')")
     assert calls_record == 3
 
     # life just goes on
     multitimer.tick()
     assert calls_record == 4
+
+
+# -- tests for the lock
+
+def test_lock_default():
+    """Should be unlocked."""
+    lock = multitimer.NonblockingLock()
+    assert lock.locked() is False
+
+
+def test_lock_sequence():
+    """Basic acquire and release."""
+    lock = multitimer.NonblockingLock()
+    lock.acquire()
+    assert lock.locked() is True
+    lock.release()
+    assert lock.locked() is False
+
+
+def test_lock_double_acquire():
+    """Try acquire twice (second should fail)."""
+    lock = multitimer.NonblockingLock()
+    assert lock.acquire() is True
+    assert lock.locked() is True
+    assert lock.acquire() is False  # didn't acquire
+    assert lock.locked() is True
+    lock.release()
+    assert lock.locked() is False
+
+
+def test_lock_():
+    """Can't release an unlocked lock."""
+    lock = multitimer.NonblockingLock()
+    with pytest.raises(RuntimeError):
+        lock.release()

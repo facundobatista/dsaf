@@ -1,9 +1,9 @@
-# Copyright 2023 Facundo Batista
+# Copyright 2023-2024 Facundo Batista
 # https://github.com/facundobatista/dsaf
 
 """The Framework FSM."""
 
-import time
+import gc
 
 from src import logger, multitimer
 
@@ -105,12 +105,19 @@ class FrameworkFSM:
         # set up status sending to the server every 10s
         host, port = self.config['manager-host'], self.config['manager-port']
         self.status_url = f"http://{host}:{port}/v1/status/"
-        multitimer.Timer().init(period=10000, mode=multitimer.PERIODIC, callback=self._send_status)
+        timer = multitimer.Timer("status")
+        timer.init(period=10000, mode=multitimer.PERIODIC, callback=self._send_status)
 
     def _send_status(self, _):
         """Send status information to the server."""
+        gc.collect()
+        free_mem = gc.mem_free()
+        print("Free memory:", free_mem)
         # prepare the status
-        payload = {"foo": 3}  # XXX: better info! ping time to server and current datetime
+        payload = {
+            "foo": 3,
+            "free-memory": free_mem,
+        }  # XXX: better info! ping time to server and current datetime
 
         # send it to the manager
         self.network_manager.hit(self.status_url, payload)
@@ -178,23 +185,42 @@ class FrameworkFSM:
 
         return self.EV_INIT_OK
 
-    def steady_operation(self):
-        """Main working ok state.
-
-        It's both steady state but also can be called when battery is low.
-        """
+    def _steady(self, timer):
+        """Do all processing in stady state."""
+        print("======== steady!", timer)
         host, port = self.config['manager-host'], self.config['manager-port']
         url = f"http://{host}:{port}/v1/report/"
         logger.debug("Steady operation, reporting to {}", url)
 
-        while True:
-            time.sleep(2)
-            data = self.sensor_manager.get()
-            # XXX: support network error (NetworkManagerError, and transition to other state)
+        data = self.sensor_manager.get()
+        try:
             response = self.network_manager.hit(url, data)
-            logger.debug("Server response: {}", response)
+        #except NetworkManagerError:
+        except Exception as err:
+            print("======= pumba!", repr(err))
+            # XXX: transition to other state here!!!
+            timer.deinit()
+            return
 
-            # XXX: handle battery being low
+        logger.debug("Server response: {}", response)
+
+        # XXX: handle battery being low
+
+==== tick! 1
+       3.439  NetworkManager: connected!
+       3.450  Framework transition from state'started' by event 'init ok'
+       3.467  Framework new state: 'steady state'
+       3.480  Set led for state steady state
+       3.497  Framework transition from state'steady state' by event None
+       3.511  Framework transition from stateNone by event 'unexpected exception'
+       3.525  Framework new state: 'error unknown'
+       3.538  Set led for state error unknown
+       3.554  Unkwnown error: KeyError(('steady state', None),)
+
+    def steady_operation(self):
+        """Main working ok state."""
+        timer = multitimer.Timer("steady")
+        timer.init(period=2000, mode=multitimer.PERIODIC, callback=self._steady)
 
     def load_config(self):
         """Deal with the configurator node."""

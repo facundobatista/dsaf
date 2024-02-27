@@ -1,4 +1,4 @@
-# Copyright 2023 Facundo Batista
+# Copyright 2023-2024 Facundo Batista
 # https://github.com/facundobatista/dsaf
 
 """Distributed node framework."""
@@ -24,10 +24,10 @@ class Led:
     """Manage a led."""
 
     def __init__(self, pin_id):
-        self.led = machine.Pin(2, machine.Pin.OUT)  # "active low"; IOW "inversed"
+        self.led = machine.Pin(pin_id, machine.Pin.OUT)  # "active low"; IOW "inversed"
         self.blink_idx = None
         self.blink_on = None
-        self.timer = multitimer.Timer()
+        self.timer = multitimer.Timer(f"led pin={pin_id}")
 
     def set(self, on):
         """Turn on (on=True) or off (on=False) the led permanently."""
@@ -107,6 +107,7 @@ class NetworkManager:
                 self.connect(self.ssid, self.password)
                 resp = urequest.urlopen(url, data=data)
             else:
+                print("=========== unknown OSError", exc.errno)
                 raise
             # XXX: also support server down
             #       OSError(104,)
@@ -119,26 +120,12 @@ class NetworkManager:
 machine_timer = machine.Timer(-1)
 
 
-def timer_second_hook(_):
-    """Secondary timer hook, not called directly but scheduled.
-
-    This one is the one exercising machinery, as it's allowed to create objects, etc.
-    """
-    multitimer.tick()
-    # XXX don't use always TICK_DELAY, but itself reduced by the time used in multitimer ticking
-    # (so it effectively is called later in TICK_DELAY and no drift happens)
-    machine_timer.init(
-        period=multitimer.TICK_DELAY,
-        mode=machine.Timer.ONE_SHOT,
-        callback=timer_main_hook)
-
-
-def timer_main_hook(_):
+def timer_hook(_):
     """Main timer hook, called by hardware.
 
-    This one MUST do almost nothing, but just schedule the second hook.
+    This one MUST do almost nothing, but just schedule the multitimer tick.
     """
-    micropython.schedule(timer_second_hook, None)
+    micropython.schedule(multitimer.tick, None)
 
 
 def run():
@@ -150,8 +137,8 @@ def run():
     # hook the machine timer
     machine_timer.init(
         period=multitimer.TICK_DELAY,
-        mode=machine.Timer.ONE_SHOT,
-        callback=timer_main_hook)
+        mode=machine.Timer.PERIODIC,
+        callback=timer_hook)
 
     fsm = FrameworkFSM(NetworkManager(), ExampleSensorManager, green_led)
     fsm.loop()
