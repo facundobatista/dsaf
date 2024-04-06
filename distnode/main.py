@@ -1,7 +1,9 @@
-# Copyright 2023 Facundo Batista
+# Copyright 2023-2024 Facundo Batista
 # https://github.com/facundobatista/dsaf
 
 """Microcontroller's entry point."""
 
+import uasyncio
+
 from src import main
-main.run()
+uasyncio.run(main.run())

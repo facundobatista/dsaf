@@ -4,8 +4,9 @@
 """The Framework FSM."""
 
 import gc
+import uasyncio
 
-from src import logger, multitimer
+from src import logger
 
 
 class FrameworkFSM:
@@ -31,7 +32,7 @@ class FrameworkFSM:
     # transitions: from-state + event -> new-state + function-to-call
     _transitions = {
         # bootstrap
-        (None, None): (ST_STARTED, "init"),  # bootsrap
+        (None, None): (ST_STARTED, "init"),  # bootstrap
         # generic error triggered by an exception
         (None, EV_EXCEPTION): (ST_ERROR_UNKNOWN, "handle_unknown_error"),
         # regular transitions
@@ -86,13 +87,13 @@ class FrameworkFSM:
         ),
     }
 
-    def __init__(self, network_manager, sensor_class, status_led_green):
+    def __init__(self, network_manager, sensor_class, status_led_green, status_led_red):
         self.status_led_green = status_led_green
-        # XXX: incorporate blue led
+        self.status_led_red = status_led_red
 
         # XXX: this should be loaded from disk or set by the configurator!!
         self.config = {
-            "manager-host": "192.168.100.5",
+            "manager-host": "192.168.2.218",
             "manager-port": 5000,
             "wifi-ssid": "Illapa",
             "wifi-password": "Orko1249",
@@ -101,26 +102,6 @@ class FrameworkFSM:
         self.sensor_manager = None
         self.network_manager = network_manager
         self.sensor_class = sensor_class
-
-        # set up status sending to the server every 10s
-        host, port = self.config['manager-host'], self.config['manager-port']
-        self.status_url = f"http://{host}:{port}/v1/status/"
-        timer = multitimer.Timer("status")
-        timer.init(period=10000, mode=multitimer.PERIODIC, callback=self._send_status)
-
-    def _send_status(self, _):
-        """Send status information to the server."""
-        gc.collect()
-        free_mem = gc.mem_free()
-        print("Free memory:", free_mem)
-        # prepare the status
-        payload = {
-            "foo": 3,
-            "free-memory": free_mem,
-        }  # XXX: better info! ping time to server and current datetime
-
-        # send it to the manager
-        self.network_manager.hit(self.status_url, payload)
 
     def _set_led(self, led, status):
         """Set a led to a specific status."""
@@ -133,14 +114,14 @@ class FrameworkFSM:
     def _set_leds(self):
         """Set the leds according to current state."""
         logger.debug("Set led for state {}", self.current_state)
-        green_info, blue_info = self._leds_status[self.current_state]
+        green_info, red_info = self._leds_status[self.current_state]
         self._set_led(self.status_led_green, green_info)
-        # XXX: handle blue led
+        self._set_led(self.status_led_red, red_info)
 
     def _transition(self, transition_event):
         """Transition from one state to the other and set leds properly."""
         logger.info(
-            "Framework transition from state{!r} by event {!r}",
+            "Framework transition from state {!r} by event {!r}",
             self.current_state, transition_event)
         self.current_state, function_name = self._transitions[
             (self.current_state, transition_event)]
@@ -149,78 +130,72 @@ class FrameworkFSM:
         self._set_leds()
         return function
 
-    def _loop(self):
-        """Real main loop."""
-        function = self._transition(None)
-
-        while True:
-            event = function()
-            function = self._transition(event)
-
-    def loop(self):
+    async def loop(self):
         """Wrap the main loop around a try/except for robust information set."""
-        try:
-            self._loop()
-        except Exception as exc:
-            # XXX log this to disk?
-            self.current_state = None
-            function = self._transition(self.EV_EXCEPTION)
-            function(exc)
+        function = self._transition(None)
+        while True:
+            try:
+                event = await function()
+            except Exception as exc:
+                # XXX log this to disk?
+                print("================ UNKN Exc", exc)
+                self.current_state = None
+                function = self._transition(self.EV_EXCEPTION)
+                function(exc)
+                print("============ exit????")
+                break
+            else:
+                function = self._transition(event)
 
-    def init(self):
+    async def init(self):
         """Initiate the process."""
         # XXX: handle missing config (or not)
 
         self.sensor_manager = self.sensor_class(self.config)
 
         # connect to the network
-        self.network_manager.connect(self.config["wifi-ssid"], self.config["wifi-password"])
+        await self.network_manager.connect(self.config["wifi-ssid"], self.config["wifi-password"])
 
         # # going into normal mode
         # status_led.blink(4500, 500)
 
-        # XXX cannot have the same timer to do two things, we'll need to implement a
-        # virtual timer/scheduler or something
-        # timer.init(period=send_status, mode=machine.Timer.PERIODIC, callback=send_status)
+        # set up status sending to the server every 10s
+        host, port = self.config['manager-host'], self.config['manager-port']
+        status_url = f"http://{host}:{port}/v1/status/"
+        uasyncio.create_task(self._send_status(status_url))
 
         return self.EV_INIT_OK
 
-    def _steady(self, timer):
-        """Do all processing in stady state."""
-        print("======== steady!", timer)
+    async def _send_status(self, status_url):
+        """Send status information to the server."""
+        while True:
+            gc.collect()
+            free_mem = gc.mem_free()
+            # prepare the status
+            payload = {
+                "foo": 3,
+                "free-memory": free_mem,
+            }  # XXX: better info! ping time to server and current datetime
+
+            # send it to the manager
+            await self.network_manager.hit(status_url, payload)
+            await uasyncio.sleep_ms(10000)
+
+    async def steady_operation(self):
+        """Main working ok state."""
+        print("======== steady!")
         host, port = self.config['manager-host'], self.config['manager-port']
         url = f"http://{host}:{port}/v1/report/"
-        logger.debug("Steady operation, reporting to {}", url)
 
-        data = self.sensor_manager.get()
-        try:
-            response = self.network_manager.hit(url, data)
-        #except NetworkManagerError:
-        except Exception as err:
-            print("======= pumba!", repr(err))
-            # XXX: transition to other state here!!!
-            timer.deinit()
-            return
+        while True:
+            logger.debug("Steady operation, reporting to {}", url)
 
-        logger.debug("Server response: {}", response)
+            data = self.sensor_manager.get()
+            response = await self.network_manager.hit(url, data)
+            logger.debug("Server response: {}", response)
+            await uasyncio.sleep_ms(5000)
 
-        # XXX: handle battery being low
-
-==== tick! 1
-       3.439  NetworkManager: connected!
-       3.450  Framework transition from state'started' by event 'init ok'
-       3.467  Framework new state: 'steady state'
-       3.480  Set led for state steady state
-       3.497  Framework transition from state'steady state' by event None
-       3.511  Framework transition from stateNone by event 'unexpected exception'
-       3.525  Framework new state: 'error unknown'
-       3.538  Set led for state error unknown
-       3.554  Unkwnown error: KeyError(('steady state', None),)
-
-    def steady_operation(self):
-        """Main working ok state."""
-        timer = multitimer.Timer("steady")
-        timer.init(period=2000, mode=multitimer.PERIODIC, callback=self._steady)
+            # XXX: handle battery being low
 
     def load_config(self):
         """Deal with the configurator node."""
