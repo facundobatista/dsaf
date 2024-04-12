@@ -3,25 +3,38 @@
 
 import time
 
+# levels
+DEBUG = 10
+INFO = 20
+ERROR = 30
 
-def _log(template, *params):
+# default
+_level = ERROR
+
+
+def set_level(level):
+    global _level
+    _level = level
+
+
+def _log(level, template, *params):
     """Print the requested text with a timestamp prefix."""
     ticks = str(time.ticks_ms())
     sec, ms = ticks[:-3], ticks[-3:]
     text = template.format(*params)
-    print(f"{sec:>8s}.{ms}  {text}")
+    print(f"{sec:>8s}.{ms} {level}  {text}")
 
 
 def error(template, *params):
-    # XXX validate level
-    _log(template, *params)
+    if _level <= ERROR:
+        _log("ERROR", template, *params)
 
 
 def info(template, *params):
-    # XXX validate level
-    _log(template, *params)
+    if _level <= INFO:
+        _log("INFO ", template, *params)
 
 
 def debug(template, *params):
-    # XXX validate level
-    _log(template, *params)
+    if _level <= DEBUG:
+        _log("DEBUG", template, *params)

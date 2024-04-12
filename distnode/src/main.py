@@ -75,6 +75,7 @@ class Led:
 
 async def run():
     """Set up everything and run."""
+    logger.set_level(logger.DEBUG)
     logger.info("Start")
     internal_led = Led(2, inverted=True)  # internal
     internal_led.set(True)

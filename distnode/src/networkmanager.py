@@ -22,43 +22,56 @@ class NetworkManager:
         self.password = password
         self.wlan = None
         self.connected = False
+        self.connection_lock = uasyncio.Lock()
 
     async def connect(self):
         """Connect to the network."""
-        logger.info("NetworkManager: connect")
+        logger.info("NetworkManager: connect?")
+        if self.connected:
+            logger.info("NetworkManager: already connected, done")
+            return
+        logger.info("NetworkManager: connect!")
 
+        # support for confused hardware state
         if self.wlan is not None and self.wlan.isconnected():
-            logger.debug("NetworkManager: already connected, disconnecting...")
+            logger.debug("NetworkManager: underlying already connected, disconnecting...")
             self.wlan.disconnect()
 
-        self.wlan = network.WLAN(network.STA_IF)  # create station interface
-        self.wlan.active(True)  # activate the interface
+        # create station interface, activate, and connect
+        self.wlan = network.WLAN(network.STA_IF)
+        self.wlan.active(True)
         self.wlan.connect(self.ssid, self.password)
+
+        # wait until connection is fully established
         while not self.wlan.isconnected():
             logger.debug("NetworkManager: waiting for connection...")
-            await uasyncio.sleep_ms(1000)
+            await uasyncio.sleep_ms(500)
         self.connected = True
         logger.info("NetworkManager: connected! {}", self.wlan.ifconfig())
 
     async def hit(self, url, payload):
         """Do a POST to an url with a json-able payload."""
-        if not self.connected:
-            await self.connect()
+        logger.debug("NetworkManager: hit {} with {}", url, payload)
 
-        logger.debug("Network hit {} with {}", url, payload)
+        if not self.connected:
+            async with self.connection_lock:
+                await self.connect()
+
         data = json.dumps(payload).encode("ascii")
         try:
             resp = urequest.urlopen(url, data=data)
         except OSError as exc:
+            logger.debug("NetworkManager: urlopen oserror: {}", exc.errno)
             if exc.errno == 103:
-                logger.debug("Network connection lost")
+                # disconnection
                 self.connected = False
             elif exc.errno == 104:
-                logger.debug("Server not available")
+                # normal server down
+                pass
             else:
-                logger.debug("Network unknown OSError: {}", exc.errno)
+                logger.error("Network unknown OSError: {}", exc.errno)
                 raise
-            raise NetworkError()
+            raise NetworkError(str(exc))
 
         content = resp.read()
         resp.close()

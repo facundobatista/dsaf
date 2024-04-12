@@ -106,6 +106,9 @@ class FrameworkFSM:
         self.status_led_red = status_led_red
         self.config = load_config("system.cfg")
 
+        host, port = self.config['manager-host'], self.config['manager-port']
+        self.status_url = f"http://{host}:{port}/v1/status/"
+
         self.current_state = None
         self.sensor_manager = None
         self.network_manager = NetworkManager(
@@ -161,13 +164,11 @@ class FrameworkFSM:
         self.sensor_manager = self.sensor_class(self.config)
 
         # set up status sending to the server every 10s
-        host, port = self.config['manager-host'], self.config['manager-port']
-        status_url = f"http://{host}:{port}/v1/status/"
-        uasyncio.create_task(self._send_status(status_url))
+        uasyncio.create_task(self._send_status())
 
         return self.EV_INIT_OK
 
-    async def _send_status(self, status_url):
+    async def _send_status(self):
         """Send status information to the server."""
         while True:
             gc.collect()
@@ -180,7 +181,7 @@ class FrameworkFSM:
 
             # send it to the manager
             try:
-                await self.network_manager.hit(status_url, payload)
+                await self.network_manager.hit(self.status_url, payload)
             except NetworkError:
                 pass
             await uasyncio.sleep_ms(10000)
@@ -214,18 +215,15 @@ class FrameworkFSM:
 
     def handle_server_error(self):
         """Handle a miscomunication to the server."""
-        # XXX: build this url only once
-        host, port = self.config['manager-host'], self.config['manager-port']
-        url = f"http://{host}:{port}/v1/status/"
         counter = 0
         while True:
             await uasyncio.sleep_ms(2000)
             payload = {
-                "reconnecting": counter,
+                "checking-server": counter,
             }
             try:
-                logger.debug("Server error reconnect attempt {}", counter)
-                await self.network_manager.hit(url, payload)
+                logger.debug("Server error check attempt {}", counter)
+                await self.network_manager.hit(self.status_url, payload)
             except NetworkError:
                 pass
             else:
