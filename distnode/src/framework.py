@@ -7,6 +7,18 @@ import gc
 import uasyncio
 
 from src import logger
+from src.networkmanager import NetworkManager, NetworkError
+
+
+def load_config(filepath):
+    """Load a config from file.
+
+    Very simple structure: key/values separated by colon, single line.
+    """
+    with open(filepath, "rt") as fh:
+        lines = [x.strip() for x in fh]
+    keyvals = [line.split(":", 1) for line in lines if line]
+    return {k: v.strip() for k, v in keyvals}
 
 
 class FrameworkFSM:
@@ -28,6 +40,7 @@ class FrameworkFSM:
     EV_ERROR_NO_SERVER = "no server comm"
     EV_LOW_BATTERY = "battery low"
     EV_EXCEPTION = "unexpected exception"
+    EV_SERVER_OK = "server ok"
 
     # transitions: from-state + event -> new-state + function-to-call
     _transitions = {
@@ -42,6 +55,7 @@ class FrameworkFSM:
         (ST_LOADING_CONFIG, EV_CONFIG_LOADED): (ST_STEADY, "steady_operation"),
         (ST_STEADY, EV_ERROR_NO_SERVER): (ST_ERROR_NO_SERVER, "handle_server_error"),
         (ST_STEADY, EV_LOW_BATTERY): (ST_LOW_BATTERY, "steady_operation"),
+        (ST_ERROR_NO_SERVER, EV_SERVER_OK): (ST_STEADY, "steady_operation"),
     }
 
     # status leds for the different states (green, blue); each item has two values
@@ -87,20 +101,15 @@ class FrameworkFSM:
         ),
     }
 
-    def __init__(self, network_manager, sensor_class, status_led_green, status_led_red):
+    def __init__(self, sensor_class, status_led_green, status_led_red):
         self.status_led_green = status_led_green
         self.status_led_red = status_led_red
+        self.config = load_config("system.cfg")
 
-        # XXX: this should be loaded from disk or set by the configurator!!
-        self.config = {
-            "manager-host": "192.168.2.218",
-            "manager-port": 5000,
-            "wifi-ssid": "Illapa",
-            "wifi-password": "Orko1249",
-        }
         self.current_state = None
         self.sensor_manager = None
-        self.network_manager = network_manager
+        self.network_manager = NetworkManager(
+            self.config["wifi-ssid"], self.config["wifi-password"])
         self.sensor_class = sensor_class
 
     def _set_led(self, led, status):
@@ -149,15 +158,7 @@ class FrameworkFSM:
 
     async def init(self):
         """Initiate the process."""
-        # XXX: handle missing config (or not)
-
         self.sensor_manager = self.sensor_class(self.config)
-
-        # connect to the network
-        await self.network_manager.connect(self.config["wifi-ssid"], self.config["wifi-password"])
-
-        # # going into normal mode
-        # status_led.blink(4500, 500)
 
         # set up status sending to the server every 10s
         host, port = self.config['manager-host'], self.config['manager-port']
@@ -178,12 +179,14 @@ class FrameworkFSM:
             }  # XXX: better info! ping time to server and current datetime
 
             # send it to the manager
-            await self.network_manager.hit(status_url, payload)
+            try:
+                await self.network_manager.hit(status_url, payload)
+            except NetworkError:
+                pass
             await uasyncio.sleep_ms(10000)
 
     async def steady_operation(self):
         """Main working ok state."""
-        print("======== steady!")
         host, port = self.config['manager-host'], self.config['manager-port']
         url = f"http://{host}:{port}/v1/report/"
 
@@ -191,7 +194,11 @@ class FrameworkFSM:
             logger.debug("Steady operation, reporting to {}", url)
 
             data = self.sensor_manager.get()
-            response = await self.network_manager.hit(url, data)
+            try:
+                response = await self.network_manager.hit(url, data)
+            except NetworkError:
+                return self.EV_ERROR_NO_SERVER
+
             logger.debug("Server response: {}", response)
             await uasyncio.sleep_ms(5000)
 
@@ -207,11 +214,22 @@ class FrameworkFSM:
 
     def handle_server_error(self):
         """Handle a miscomunication to the server."""
-        # XXX: to be implemented
-        #  - sleep a couple of seconds
-        #  - try if server is fine (hit it with a HEAD or something)
-        #  - if yes, return transition to steady state
-        #  - if not (NetworkManagerError), GOTO 10
+        # XXX: build this url only once
+        host, port = self.config['manager-host'], self.config['manager-port']
+        url = f"http://{host}:{port}/v1/status/"
+        counter = 0
+        while True:
+            await uasyncio.sleep_ms(2000)
+            payload = {
+                "reconnecting": counter,
+            }
+            try:
+                logger.debug("Server error reconnect attempt {}", counter)
+                await self.network_manager.hit(url, payload)
+            except NetworkError:
+                pass
+            else:
+                return self.EV_SERVER_OK
 
     def handle_unknown_error(self, exc):
         """Handle a generic unknown error."""

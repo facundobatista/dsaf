@@ -1,0 +1,4 @@
+manager-host: 192.168.1.2
+manager-port: 5000
+wifi-ssid: mywifi
+wifi-password: thepass
