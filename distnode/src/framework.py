@@ -5,6 +5,7 @@
 
 import gc
 import uasyncio
+import sys
 
 from src import logger
 from src.networkmanager import NetworkManager, NetworkError
@@ -50,8 +51,8 @@ class FrameworkFSM:
         (None, EV_EXCEPTION): (ST_ERROR_UNKNOWN, "handle_unknown_error"),
         # regular transitions
         (ST_STARTED, EV_INIT_OK): (ST_STEADY, "steady_operation"),
-        (ST_STARTED, EV_MISSING_CONFIG): (ST_ERROR_NO_CONFIG, "no_config"),
-        (ST_ERROR_NO_CONFIG, EV_CONFIGURATOR_DETECTED): (ST_LOADING_CONFIG, "load_config"),
+        # (ST_STARTED, EV_MISSING_CONFIG): (ST_ERROR_NO_CONFIG, "no_config"),
+        # (ST_ERROR_NO_CONFIG, EV_CONFIGURATOR_DETECTED): (ST_LOADING_CONFIG, "load_config"),
         (ST_LOADING_CONFIG, EV_CONFIG_LOADED): (ST_STEADY, "steady_operation"),
         (ST_STEADY, EV_ERROR_NO_SERVER): (ST_ERROR_NO_SERVER, "handle_server_error"),
         (ST_STEADY, EV_LOW_BATTERY): (ST_LOW_BATTERY, "steady_operation"),
@@ -145,19 +146,17 @@ class FrameworkFSM:
     async def loop(self):
         """Wrap the main loop around a try/except for robust information set."""
         function = self._transition(None)
+        args = ()
         while True:
             try:
-                event = await function()
+                event = await function(*args)
+                args = ()
             except Exception as exc:
-                # XXX log this to disk?
-                print("================ UNKN Exc", exc)
                 self.current_state = None
-                function = self._transition(self.EV_EXCEPTION)
-                function(exc)
-                print("============ exit????")
-                break
-            else:
-                function = self._transition(event)
+                event = self.EV_EXCEPTION
+                args = (exc,)
+
+            function = self._transition(event)
 
     async def init(self):
         """Initiate the process."""
@@ -177,7 +176,7 @@ class FrameworkFSM:
             payload = {
                 "foo": 3,
                 "free-memory": free_mem,
-            }  # XXX: better info! ping time to server and current datetime
+            }  # XXX: better info! current state and current datetime
 
             # send it to the manager
             try:
@@ -205,13 +204,11 @@ class FrameworkFSM:
 
             # XXX: handle battery being low
 
-    def load_config(self):
-        """Deal with the configurator node."""
-        # XXX: to be implemented
+    # def load_config(self):
+    #     """Deal with the configurator node."""
 
-    def no_config(self):
-        """No config, wait for configurator."""
-        # XXX: to be implemented
+    # def no_config(self):
+    #     """No config, wait for configurator."""
 
     def handle_server_error(self):
         """Handle a miscomunication to the server."""
@@ -231,5 +228,25 @@ class FrameworkFSM:
 
     def handle_unknown_error(self, exc):
         """Handle a generic unknown error."""
-        # XXX: to be implemented
-        logger.info("Unkwnown error: {!r}", exc)
+        logger.error("Unkwnown error: {!r}", exc)
+
+        # save traceback to disk
+        fpath = "traceback.txt"
+        with open(fpath, "wt") as fh:
+            sys.print_exception(exc, fh)
+        logger.error("File {} saved", fpath)
+
+        # try to send a crash report to the server
+        # XXX que el "hit" de NM tenga el path; host y port lo arma una sola vez allá
+        host, port = self.config['manager-host'], self.config['manager-port']
+        url = f"http://{host}:{port}/v1/crash/"
+        with open(fpath, "rt") as fh:
+            payload = fh.read()
+        try:
+            await self.network_manager.hit(url, payload)
+        except NetworkError:
+            pass
+
+        # sleep forever (the system is considered dead now, but leds should still blink)
+        while True:
+            await uasyncio.sleep_ms(60000)
