@@ -21,6 +21,7 @@ async def status():
     print("======= status from distnode", content)
     return "OK"
 
+
 @app.route("/v1/crash/", methods=["POST"])
 async def crash():
     content = await request.get_data()

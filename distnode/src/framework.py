@@ -210,7 +210,7 @@ class FrameworkFSM:
     # def no_config(self):
     #     """No config, wait for configurator."""
 
-    def handle_server_error(self):
+    async def handle_server_error(self):
         """Handle a miscomunication to the server."""
         counter = 0
         while True:
@@ -226,7 +226,7 @@ class FrameworkFSM:
             else:
                 return self.EV_SERVER_OK
 
-    def handle_unknown_error(self, exc):
+    async def handle_unknown_error(self, exc):
         """Handle a generic unknown error."""
         logger.error("Unkwnown error: {!r}", exc)
 
