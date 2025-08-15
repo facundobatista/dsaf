@@ -1,16 +1,20 @@
 # Copyright 2023 Facundo Batista
 # https://github.com/facundobatista/dsaf
 
-import time
+import asyncio
+import sys
+import urllib
+import urllib.request
 
 import pytest
 
+from tests.fakemods import network
 
-@pytest.fixture(scope="module", autouse=True)
-def fix_time():
-    """Patch time module with needed attribute to run tests outside microcontroller."""
-    if not hasattr(time, "ticks_ms"):
-        time.ticks_ms = lambda: int(time.time() * 1000)
+
+# fix imports and names for micropython universe
+sys.modules["uasyncio"] = asyncio
+sys.modules["network"] = network
+urllib.urequest = urllib.request
 
 
 @pytest.fixture()
