@@ -178,6 +178,7 @@ class SystemBoard:
         ssid = "Remex-" + machine.unique_id().hex()
         self.network_manager = NetworkManager()
         await self.network_manager.start_ap(ssid, "remex-config")
+        print("=================== wifi ok")
 
         # views_handler = ViewsHandler(self.storage)
         # self.http_server = HTTPServer([

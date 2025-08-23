@@ -94,8 +94,6 @@ Note that if any problem is found in a "normal operation" but the framework can 
 
 ## TODO
 
-- switch between regular/config modes, in regular just "prints" something, in config just opens wifi
-- verify we can "see" the node from laptop
 - script to connect to node, ask health, sets config (wifi data, and ManagNode location)
 - make it work to get out of config; report to the node that is switching (before doing so), connect and report back to the ManagNode
 - now in "regular" we should see reports to ManagNode
