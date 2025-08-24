@@ -26,10 +26,12 @@ VERSION = b"1"
 
 NULL = b"\x00"
 
+# these numbers, for simplicity to the human, are the same than HTTP status codes
+# without the middle 0
 STATUS_OK = b"\x20"  # the method succeeded
 STATUS_MISS = b"\x44"  # no handler for the method
 STATUS_CRASH = b"\x50"  # something else went really bad
-STATUS_ERROR = b"\x52"  # the method failed to execute properly
+STATUS_ERROR = b"\x52"  # the user method failed to execute properly
 
 MISSING = object()
 
