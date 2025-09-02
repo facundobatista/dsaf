@@ -5,7 +5,7 @@ import asyncio
 
 import machine
 
-from src import logger
+from lib import logger
 
 
 class Button:

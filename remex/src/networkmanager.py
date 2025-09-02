@@ -7,7 +7,7 @@ import asyncio
 
 import network
 
-from src import logger
+from lib import logger
 
 # turn off the AP on boot, it's handled properly by code
 network.WLAN(network.AP_IF).active(False)

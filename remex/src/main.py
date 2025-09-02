@@ -10,9 +10,9 @@ import time
 
 import machine
 
-from src import logger
+from lib.comms import ProtocolServer, ProtocolClient, STATUS_OK
+from lib import logger
 from src.button import Button
-#from src.comms import ConfigServer
 from src.outputs import Led
 from src.networkmanager import NetworkManager
 
@@ -20,6 +20,14 @@ from src.networkmanager import NetworkManager
 PIN_FLASH_BUTTON = 0
 PIN_POWER_LED = 2
 PIN_STATUS_LED = 16
+
+# set of blinkings
+BLINK_POWER_OK = [100, 9900]
+BLINK_POWER_PANIC = [260, 240]
+BLINK_STATUS_BAD_CONFIG = [200, 2800]
+BLINK_STATUS_BAD_WIFI = [200, 200, 200, 2400]
+BLINK_STATUS_BAD_CONNECTION = [200, 200, 200, 200, 200, 2000]
+BLINK_STATUS_REJECTED = [200, 200, 200, 200, 200, 200, 200, 1600]
 
 
 class Storage:
@@ -39,126 +47,89 @@ class Storage:
         except OSError:
             self._storage = {}
 
+    def exists(self):
+        """Indicate if there is *any* config."""
+        return self._storage != {}
+
     def get(self, key, default=None):
         """Return the value of the key in the storage, default if not present."""
         return self._storage.get(key, default)
 
-    def set(self, key, value):
-        """Set and save the key/value pair in the storage."""
-        self._storage[key] = value
+    def _save(self):
+        """Securely save to disk."""
         with open(self._filepath_temp, "wt") as fh:
             json.dump(self._storage, fh)
         os.rename(self._filepath_temp, self._filepath)
 
+    def update(self, source):
+        """Set and save the multiple key/value pairs in the storage."""
+        self._storage.update(source)
+        self._save()
 
-# class ViewsHandler:
-#     def __init__(self, storage, action_callback=None):
-#         self.storage = storage
-#         self.action_callback = action_callback
-#
-#     def get_operation(self, request):
-#         is_mode_automatic = self.storage.get("mode_automatic", False)
-#         manual_state = self.storage.get("manual_state", False)
-#         auto_freq = self.storage.get("auto_freq")
-#         params = {
-#             "is_auto_mode_selected": "selected" if is_mode_automatic else "",
-#             "is_manual_mode_selected": "" if is_mode_automatic else "selected",
-#             "initial_frequency": auto_freq or "Escribe la frecuencia",
-#             "initial_button_state": manual_state,
-#         }
-#         return render_template("actions.html", params)
-#
-#     def set_operation(self, request):
-#         content = request.content
-#         if content["mode"] == "manual":
-#             is_mode_automatic = False
-#             manual_state = content["status"]
-#             auto_freq = None
-#         else:
-#             is_mode_automatic = True
-#             manual_state = None
-#             try:
-#                 auto_freq = float(content["frequency"])
-#             except ValueError:
-#                 auto_freq = None
-#             else:
-#                 if auto_freq <= 0:
-#                     auto_freq = None
-#
-#         logger.info(
-#             "Action! mode_automatic={}, manual={}, freq={}",
-#             is_mode_automatic, manual_state, auto_freq)
-#         self.storage.set("mode_automatic", is_mode_automatic)
-#         self.storage.set("manual_state", manual_state)
-#         self.storage.set("auto_freq", auto_freq)
-#         self.action_callback()
-#
-#     def get_config(self, request):
-#         network = self.storage.get("config_network", "")
-#         password = self.storage.get("config_pasword", "")
-#         params = {
-#             "prefill_network": network,
-#             "prefill_password": password,
-#             "message": "",
-#         }
-#         return render_template("config.html", params)
-#
-#     def set_config(self, request):
-#         content = request.content
-#         network = content["network"]
-#         password = content["password"]
-#
-#         if not is_valid_ssid(network):
-#             message = "Nombre de red inválido: hasta 32 letras, números, guión medio o bajo"
-#         elif not is_valid_password(password):
-#             message = "Password inválida: sólo caracteres ASCII mostrables, entre 8 y 63 de largo"
-#         else:
-#             logger.info("Config set! network={}, password={}", network, password)
-#             self.storage.set("config_network", network)
-#             self.storage.set("config_password", password)
-#             message = "Configuración cambiada OK"
-#
-#         params = {
-#             "prefill_network": network,
-#             "prefill_password": password,
-#             "message": message,
-#         }
-#         return render_template("config.html", params)
+    def set(self, key, value):
+        """Set and save the key/value pair in the storage."""
+        self._storage[key] = value
+        self._save()
 
 
 class SystemBoard:
     def __init__(self):
-        self.storage = Storage("remex.db")
+        self.config = Storage("remex-config.db")
+        self.protocol_server = None
+        self.network_manager = None
 
         self.status_led = Led(PIN_STATUS_LED, inverted=True)
         self.power_led = Led(PIN_POWER_LED, inverted=True)
         self.button = Button(PIN_FLASH_BUTTON)
 
-        #self.http_server = None
-        #self.network_manager = None
-
     async def run(self):
         """Start to work the main system."""
-        print("==============+X 1")
         # blink leds to indicate we started working
         await self.status_led.blink_once([100, 500, 100, 100, 100, 500])
-        print("==============+X 2")
-
         await self.enter_regular_mode()
 
-    #async def _close_current_servers(self):
-    #    """Close/stop current servers/managers."""
-    #    logger.debug("Cycling servers! free mem before: {}", gc.mem_free())
-    #    if self.network_manager is not None:
-    #        logger.info("Stopping previous network manager")
-    #        await self.network_manager.stop()
-    #        self.network_manager = None
-    #    if self.http_server is not None:
-    #        logger.info("Stopping previous http server")
-    #        await self.http_server.close()
-    #        self.http_server = None
-    #    gc.collect()
-    #    logger.debug("Cycling servers! free mem after:  {}", gc.mem_free())
+    async def _close_current_servers(self):
+        """Close/stop current servers/managers."""
+        logger.debug("Cycling servers! free mem before: {}", gc.mem_free())
+        if self.network_manager is not None:
+            logger.info("Stopping previous network manager")
+            await self.network_manager.stop()
+            self.network_manager = None
+        if self.protocol_server is not None:
+            logger.info("Stopping previous http server")
+            await self.protocol_server.close()
+            self.protocol_server = None
+        gc.collect()
+        logger.debug("Cycling servers! free mem after:  {}", gc.mem_free())
+
+    @property
+    def health(self):
+        """Build a set of data representing the status of the device/framework."""
+        mem_free = gc.mem_free()
+        current_time = time.gmtime()
+        configured = self.config.exists()
+        return dict(mem_free=mem_free, current_time=current_time, configured=configured)
+
+    async def _serve_health(self):
+        """Report the general health of the device."""
+        print("=================== SERVE HEALTH")
+        return json.dumps(self.health)
+
+    async def _serve_config(self, raw_data):
+        """Receive and save config."""
+        print("=================== SERVE CONFIG", raw_data)
+        # wifi (ssid y clave), ip del management node, nombre device, hora *posta*
+        info = json.loads(raw_data)
+
+        # set microcontroller's time
+        time_tuple = info.pop("current_time_tuple")[:8]  # discard DST, if came
+        rtc = machine.RTC()
+        rtc.datetime(time_tuple)
+
+        # check arrived info and save config
+        assert set(info) == {"wifi_ssid", "wifi_password", "management_node_ip", "name"}
+        self.config.update(info)
+        logger.info("Saved new configuration")
 
     async def enter_config_mode(self):
         """Configuration mode.
@@ -167,11 +138,10 @@ class SystemBoard:
         - change button to callback to regular mode
         """
         logger.info("Entering Config mode")
-        #await self._close_current_servers()
+        await self._close_current_servers()
         self.status_led.set(True)
         self.power_led.start_blinking([500, 500])
         self.button.set_interrupt(200, self.enter_regular_mode)
-
         print("=================== MODE CONFIG")
 
         # open wifi
@@ -181,44 +151,73 @@ class SystemBoard:
         print("=================== wifi ok")
 
         # views_handler = ViewsHandler(self.storage)
-        # self.http_server = HTTPServer([
-        #     ("GET", "/favicon.ico", None),
-        #     ("POST", "/config", views_handler.set_config),
-        #     ("GET", "/config", views_handler.get_config),
-        #     ("GET", "/", views_handler.get_config),
-        # ])
-        # await self.http_server.start()
-        # logger.info("Serving config")
+        callbacks = {
+            "HEALTH": self._serve_health,
+            "CONFIG": self._serve_config,
+        }
+        self.protocol_server = ProtocolServer(callbacks)
+        await self.protocol_server.listen(80)
+        logger.info("Serving config")
+
+    async def _update_job(self, data):
+        """Receive a new job to run."""
+        print("=================== UPDATE JOB!!!", repr(data))
 
     async def enter_regular_mode(self):
         """Regular operation mode."""
         logger.info("Entering Regular mode")
-        #await self._close_current_servers()
-        self.status_led.set(False)
-        self.power_led.start_blinking([100, 9900])
+        await self._close_current_servers()
         self.button.set_interrupt(2500, self.enter_config_mode)
 
         print("=================== MODE REGULAR")
-        # ssid = self.storage.get("config_network")
-        # if ssid is None:
-        #     logger.info("Warning: no SSID config")
-        #     self.green_led.blink([100, 100])
-        #     return
 
-        # password = self.storage.get("config_password")
-        # logger.info("Starting operation AP")
-        # self.green_led.set(True)
-        # self.network_manager = NetworkManager()
-        # await self.network_manager.start_ap(ssid, password)
+        # get required info from the config
+        if not self.config.exists():
+            self.power_led.start_blinking(BLINK_POWER_PANIC)
+            self.status_led.start_blinking(BLINK_STATUS_BAD_CONFIG)
+            logger.error("Missing config")
+            return
 
-        # views_handler = ViewsHandler(self.storage, self.apply_system_state)
-        # self.http_server = HTTPServer([
-        #     ("GET", "/favicon.ico", None),
-        #     ("POST", "/operate", views_handler.set_operation),
-        #     ("GET", "/operate", views_handler.get_operation),
-        #     ("GET", "/", views_handler.get_operation),
-        # ])
-        # await self.http_server.start()
+        info = {}
+        for key in ["wifi_ssid", "wifi_password", "management_node_ip", "name"]:
+            value = self.config.get(key)
+            if value is None:
+                self.power_led.start_blinking(BLINK_POWER_PANIC)
+                self.status_led.start_blinking(BLINK_STATUS_BAD_CONFIG)
+                logger.error("Missing {!r} key in the config", key)
+                return
+            info[key] = value
+
+        logger.debug("Connecting to WiFi")
+        self.network_manager = NetworkManager()
+        try:
+            await self.network_manager.start_ap(info["wifi_ssid"], info["wifi_password"])
+        except Exception as exc:
+            self.power_led.start_blinking(BLINK_POWER_PANIC)
+            self.status_led.start_blinking(BLINK_STATUS_BAD_WIFI)
+            logger.error("Problem starting the AP: {!r}", exc)
+            return
+
+        logger.debug("Connecting to Management node")
+        client = ProtocolClient(info["name"], callbacks={"UPDATE-JOB": self._update_job})
+        try:
+            await client.connect(info["management_node_ip"], 443)
+        except Exception as exc:
+            self.power_led.start_blinking(BLINK_POWER_PANIC)
+            self.status_led.start_blinking(BLINK_STATUS_BAD_CONNECTION)
+            logger.error("Problem connecting to the Management node: {!r}", exc)
+            return
+
+        status, content = await client.request("CHECK-IN", json.dumps(self.health))
+        if status != STATUS_OK:
+            self.power_led.start_blinking(BLINK_POWER_PANIC)
+            self.status_led.start_blinking(BLINK_STATUS_REJECTED)
+            logger.error("Failed to check in; response: {!r}", content)
+            return
+
+        # all good, set leds to indicate the device is up and running just fine
+        self.status_led.set(False)
+        self.power_led.start_blinking(BLINK_POWER_OK)
 
 
 system_board = SystemBoard()

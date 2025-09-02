@@ -7,7 +7,7 @@ Device to control different components in a park (pool, watering, etc.).
 
 To sync all code to device:
 ```
-./espdev_sync.py main.py src/
+./espdev_sync.py main.py src/ lib/
 ```
 
 ...or manually:
@@ -73,7 +73,7 @@ Something is wrong with the device configuration and can not connect to the Mana
 
 The quantity of fast blinks in the Status led indicates the problem found (listed here with recommended actions to follow):
 
-- 1: no configuration found
+- 1: no configuration found or is broken / incomplete
     - switch to Configuration Mode (press the button for two seconds) and configure it (see above)
 
 - 2: configuration found but cannot connect to WiFi
@@ -83,7 +83,12 @@ The quantity of fast blinks in the Status led indicates the problem found (liste
 - 3: can connect to WiFi but not to the Management Node
     - ensure the router providing WiFi has Internet working properly
 
-Note that if any problem is found in a "normal operation" but the framework can still connect to the Management Node, the device will be in Regular Mode and will just inform the failures to the Management Node.
+- 4: the Management Node rejected the device
+    - check logs in the Management Node
+
+In each case the framework will also log internally what happened.
+
+Note that if any problem is found in a "normal operation" while the device is connected to the Management Node, the device will be in Regular Mode and will just inform the failures to the Management Node.
 
 
 
@@ -101,3 +106,20 @@ Note that if any problem is found in a "normal operation" but the framework can 
 - Implement "orders" (as responses in those reports); first just prints received stuff
 - Implement "set time", always returned
 - support sending back new software; the device should get it, save it, import it, run "run()" inside
+
+
+#
+# Config dialog:
+# - el cliente busca la red; encuentra Remex-*, se conecta (passw remex-config), connect al prto 80
+#        puede recibir el nombre de la red de afuera (para no necesitar sudo)
+# - escribe HEALTH
+#     - escuchar reporte en json, un dict, muestra items
+# - escribe CONFIG -- wifi (ssid y clave), ip del management node, nombre device
+#     - escucha OK
+# - escribe CHAU
+#    - valida UAHC
+#    (y se cierra la conexión)
+
+# set of pure send/receive functions; these do not depend on any state
+
+

@@ -3,24 +3,15 @@
 
 """Communication between nodes/devices.
 
-Main programatic interfaces:
-
-    svr = Server(port)
-    await svr.listen({
-        "METHOD_X": myhandler.do_x,
-    })
-
-    ...or...
-
-    clnt = Client(host, port)
-    await clnt.request("METHOD_X", b"whatever payload")
+Main programatic interfaces are ProtocolServer and ProtocolClient, check their docstrings
+for instructions on how to use.
 """
 
 import asyncio
 import hashlib
 import math
 
-from src import logger
+from lib import logger
 
 VERSION = b"1"
 
@@ -69,22 +60,6 @@ class _Client:
         self.writer.close()
         await self.writer.wait_closed()
 
-#
-# Config dialog:
-# - el cliente busca la red; encuentra Remex-*, se conecta (passw remex-config), connect al prto 80
-#        puede recibir el nombre de la red de afuera (para no necesitar sudo)
-# - escribe HOLA
-#     - valida ALOH, y contesta la versión del device
-# - escribe HEALTH
-#     - escuchar reporte en json, un dict, muestra items
-# - escribe CONFIG -- wifi (ssid y clave), ip del management node, nombre device
-#     - escucha OK
-# - escribe CHAU
-#    - valida UAHC
-#    (y se cierra la conexión)
-
-# set of pure send/receive functions; these do not depend on any state
-
 
 async def _raw_recv(reader):
     """Read a message."""
@@ -92,8 +67,8 @@ async def _raw_recv(reader):
     payload_len = int.from_bytes(await reader.readexactly(size_len))
     payload = await reader.readexactly(payload_len)
 
-    digest = hashlib.sha1(payload).hexdigest()
-    verifier_should = digest[-2:].encode("ascii")
+    digest = hashlib.sha1(payload).digest()
+    verifier_should = digest[-2:]
     verifier_real = await reader.readexactly(2)
     if verifier_should != verifier_real:
         logger.error(
@@ -132,14 +107,17 @@ async def _raw_send(writer, payload):
     """Send a message."""
     payload_len = len(payload)
 
-    size_len = math.ceil(payload_len.bit_length() / 8)
+    # manually calculate `int.bit_length()` (not present in micropython)
+    bit_length = math.ceil(math.log(payload_len + 1) / math.log(2))
+
+    size_len = math.ceil(bit_length / 8)  # in bytes
     writer.write(size_len.to_bytes(1))
     writer.write(payload_len.to_bytes(size_len))
 
     writer.write(payload)
 
-    digest = hashlib.sha1(payload).hexdigest()
-    verifier = digest[-2:].encode("ascii")
+    digest = hashlib.sha1(payload).digest()
+    verifier = digest[-2:]
     writer.write(verifier)
 
     await writer.drain()
@@ -151,6 +129,8 @@ async def _send_request(writer, method, content):
         method = method.encode("ascii")
     if isinstance(content, str):
         content = content.encode("ascii")
+
+    assert NULL not in method
     payload = method + NULL + content
     return await _raw_send(writer, payload)
 
@@ -201,7 +181,12 @@ async def _handle_one_request(client, system_callbacks, user_callbacks):
         return False
 
     try:
-        response = await cb(content)
+        print("========= ccc content", content)
+        if content:
+            response = await cb(content)
+        else:
+            response = await cb()
+        print("========= ccc raw rst", repr(response))
         if response is None:
             response = b""
         elif isinstance(response, str):
@@ -218,12 +203,27 @@ async def _handle_one_request(client, system_callbacks, user_callbacks):
 
 
 class ProtocolClient:
-    """The communication client."""
+    """The communication client.
+
+    Usage:
+        client = ProtocolClient(name)
+        await client.connect(host, port)
+        await client.request("METHOD_X", "whatever payload")
+
+    Optionally, a map of callbacks can be passed to init Client, to receive push requests
+    from the server:
+
+        callbacks = {
+            "METHOD_X": myhandler.do_x,
+        }
+        client = ProtocolClient(name, callbacks)
+        ...
+    """
 
     def __init__(self, name, callbacks=None):
         self._name = name.encode("utf8")
-        self._fward_client = None
-        self._cback_client = None
+        self._fward_subconn = None
+        self._cback_subconn = None
         if callbacks:
             self._callbacks = {k.encode("ascii"): v for k, v in callbacks.items()}
         else:
@@ -238,7 +238,7 @@ class ProtocolClient:
 
         # connect to the server, and initial handshake to know server capabilities
         reader, writer = await asyncio.open_connection(host=host, port=port)
-        self._fward_client = _Client(reader, writer)
+        self._fward_subconn = _Client(reader, writer)
         await self._handshake()
 
         # standard login
@@ -249,13 +249,13 @@ class ProtocolClient:
         # will be to receive calls
         if self._callbacks:
             reader, writer = await asyncio.open_connection(host=host, port=port)
-            self._cback_client = _Client(reader, writer)
+            self._cback_subconn = _Client(reader, writer)
             await self._register_callback()
-            asyncio.create_task(_handle_requests(self._cback_client, {}, self._callbacks))
+            asyncio.create_task(_handle_requests(self._cback_subconn, {}, self._callbacks))
 
-    async def request(self, method, payload):
+    async def request(self, method, payload=b""):
         """Send a request to the server."""
-        return await self._request(self._fward_client, method, payload)
+        return await self._request(self._fward_subconn, method, payload)
 
     async def _request(self, client, method, payload):
         """Send a request to the server."""
@@ -269,7 +269,7 @@ class ProtocolClient:
 
     async def _handshake(self):
         """Establish first communication with the server."""
-        statuscode, content = await self._request(self._fward_client, b"HOLA", VERSION)
+        statuscode, content = await self._request(self._fward_subconn, b"HOLA", VERSION)
         if statuscode == STATUS_OK:
             logger.debug("P.Client: handshake OK; server version {!r}", content)
         else:
@@ -280,7 +280,7 @@ class ProtocolClient:
 
         XXX: we may add some secrets here in the future, stored in the device when configuring.
         """
-        statuscode, content = await self._request(self._fward_client, "LOGIN", self._name)
+        statuscode, content = await self._request(self._fward_subconn, "LOGIN", self._name)
         if statuscode == STATUS_OK:
             logger.debug("P.Client: login OK")
         else:
@@ -288,7 +288,7 @@ class ProtocolClient:
 
     async def _register_callback(self):
         """Register a stream to receive callbacks."""
-        statuscode, content = await self._request(self._cback_client, b"CALLBACK", self._name)
+        statuscode, content = await self._request(self._cback_subconn, b"CALLBACK", self._name)
         if statuscode == STATUS_OK:
             logger.debug("P.Client: register callback OK")
         else:
@@ -296,7 +296,7 @@ class ProtocolClient:
 
     async def _teardown(self):
         """Finish the communication with the server."""
-        statuscode, content = await self._request(self._fward_client, b"CHAU", b"")
+        statuscode, content = await self._request(self._fward_subconn, b"CHAU", b"")
         if statuscode == STATUS_OK:
             logger.debug("P.Client: teardown OK")
         else:
@@ -307,11 +307,11 @@ class ProtocolClient:
         logger.debug("P.Client: closing main connection")
         await self._teardown()
 
-        self._fward_client.writer.close()
-        await self._fward_client.writer.wait_closed()
-        if self._cback_client is not None:
-            self._cback_client.writer.close()
-            await self._cback_client.writer.wait_closed()
+        self._fward_subconn.writer.close()
+        await self._fward_subconn.writer.wait_closed()
+        if self._cback_subconn is not None:
+            self._cback_subconn.writer.close()
+            await self._cback_subconn.writer.wait_closed()
 
         logger.debug("P.Client: gone")
 
@@ -320,6 +320,13 @@ class ProtocolServer:
     """The communication server.
 
     Receives a dict with a map from methods names to functions/methods.
+
+    Usage:
+        callbacks = {
+            "METHOD_X": myhandler.do_x,
+        }
+        server = Server(callbacks)
+        await server.listen(port)
     """
 
     def __init__(self, callbacks):
@@ -412,18 +419,18 @@ class ProtocolServer:
         client = _Client(reader, writer)
         await _handle_requests(client, self._system_callbacks, self._user_callbacks, self._clean)
 
-    async def start(self, port):
+    async def listen(self, port):
         """Start serving."""
         self._tcp_server = await asyncio.start_server(self._handle_requests, "0.0.0.0", port)
 
     async def close(self):
         """Close the HTTP server."""
-        if self.server is None:
+        if self._tcp_server is None:
             raise RuntimeError("Tried to close a non existant server")
 
-        self.server.close()
-        await self.server.wait_closed()
-        self.server = None
+        self._tcp_server.close()
+        await self._tcp_server.wait_closed()
+        self._tcp_server = None
 
         # XXX Facundo 2024-07-25: the first is only available since 3.13, and wait_closed depends
         # of the client be closed (can't force it, needs to wait the client to close on its side)

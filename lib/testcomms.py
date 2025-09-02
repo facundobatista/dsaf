@@ -21,10 +21,9 @@ import logging
 import sys
 from collections import Counter
 
-sys.path.append("remex")
+from comms import ProtocolServer, ProtocolClient, STATUS_OK
+from comms import logger
 
-from src.comms import ProtocolServer, ProtocolClient, STATUS_OK  # NOQA (import after fixing path)
-from src.comms import logger  # NOQA (import after fixing path)
 logger.set_level(logging.DEBUG)
 
 DEVICE_NAME = "testdevice-123"

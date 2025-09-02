@@ -7,10 +7,12 @@
 
 import json
 import pathlib
+import subprocess
 import sys
 
 import ampy.files  # fades adafruit-ampy
 import ampy.pyboard
+import mpy_cross  # fades
 
 AMPY_PORT = "/dev/ttyUSB0"
 AMPY_BAUD = 115200
@@ -49,8 +51,32 @@ class Cache:
 cache = Cache()
 
 
+def get_compiled_bytes(path):
+    """Return the bytes of the *compiled* code."""
+    if path == "main.py":
+        return path.read_bytes(), path
+
+    # we keep these hidden so it's easy to cache them
+    compiled_path = path.parent / f".{path.stem}.mpy"
+
+    # in the remote device they need to have the `m` at the end
+    destination_path = path.parent / f"{path.stem}.mpy"
+
+    if not compiled_path.exists() or compiled_path.stat().st_mtime < path.stat().st_mtime:
+        # does not exist, or it's older than actual file: compile!
+        process = mpy_cross.run(path, "-o", compiled_path, stdout=subprocess.PIPE)
+        process.wait()
+        if process.returncode:
+            print(f"ERROR compiling {path}, returncode={process.returncode}, output:")
+            print(process.stdout.read())
+
+    return compiled_path.read_bytes(), destination_path
+
+
 def sync(path):
-    if path.name.startswith("_"):
+    if path.name.startswith(("_", "test", ".")):
+        # ignore private or test files
+        # print(f"   (ignoring {path})")
         return
 
     if path.is_dir():
@@ -64,7 +90,6 @@ def sync(path):
         return
 
     print("Syncing", path)
-    content = path.read_bytes()
     board = cache.get_board()
 
     # ensure parent directories
@@ -78,7 +103,13 @@ def sync(path):
                 pass
             cache.set_stat(parent, True)
 
-    board.put(str(path), content)
+    # only compile Python code, except top-dir 'main.py' as it's the Micropython's entry point
+    if str(path) == "main.py" or path.suffix != ".py":
+        content = path.read_bytes()
+        dest_path = path
+    else:
+        content, dest_path = get_compiled_bytes(path)
+    board.put(str(dest_path), content)
     cache.set_stat(path, cur_mtime)
 
 
