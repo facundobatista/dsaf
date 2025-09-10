@@ -34,7 +34,11 @@ class _Client:
         self.writer = writer
 
         # hold it cached here
-        self.addr = writer.get_extra_info('peername')
+        try:
+            self.addr = writer.get_extra_info('peername')
+        except KeyError:
+            # fails in Micropython
+            self.addr = "<unknown-address>"
 
         # event to block real finalization for the case of callback
         self._should_block_end = None
@@ -181,12 +185,10 @@ async def _handle_one_request(client, system_callbacks, user_callbacks):
         return False
 
     try:
-        print("========= ccc content", content)
         if content:
-            response = await cb(content)
+            response = await cb(client.name, content)
         else:
-            response = await cb()
-        print("========= ccc raw rst", repr(response))
+            response = await cb(client.name)
         if response is None:
             response = b""
         elif isinstance(response, str):
@@ -423,10 +425,10 @@ class ProtocolServer:
         """Start serving."""
         self._tcp_server = await asyncio.start_server(self._handle_requests, "0.0.0.0", port)
 
-    async def close(self):
-        """Close the HTTP server."""
+    async def stop(self):
+        """Stop the HTTP server."""
         if self._tcp_server is None:
-            raise RuntimeError("Tried to close a non existant server")
+            raise RuntimeError("Tried to stop a non existant server")
 
         self._tcp_server.close()
         await self._tcp_server.wait_closed()

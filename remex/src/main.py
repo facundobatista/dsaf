@@ -77,6 +77,7 @@ class SystemBoard:
         self.config = Storage("remex-config.db")
         self.protocol_server = None
         self.network_manager = None
+        self.current_job = None
 
         self.status_led = Led(PIN_STATUS_LED, inverted=True)
         self.power_led = Led(PIN_POWER_LED, inverted=True)
@@ -88,7 +89,7 @@ class SystemBoard:
         await self.status_led.blink_once([100, 500, 100, 100, 100, 500])
         await self.enter_regular_mode()
 
-    async def _close_current_servers(self):
+    async def _stop_current_servers(self):
         """Close/stop current servers/managers."""
         logger.debug("Cycling servers! free mem before: {}", gc.mem_free())
         if self.network_manager is not None:
@@ -97,7 +98,7 @@ class SystemBoard:
             self.network_manager = None
         if self.protocol_server is not None:
             logger.info("Stopping previous http server")
-            await self.protocol_server.close()
+            await self.protocol_server.stop()
             self.protocol_server = None
         gc.collect()
         logger.debug("Cycling servers! free mem after:  {}", gc.mem_free())
@@ -110,14 +111,12 @@ class SystemBoard:
         configured = self.config.exists()
         return dict(mem_free=mem_free, current_time=current_time, configured=configured)
 
-    async def _serve_health(self):
+    async def _serve_health(self, _):
         """Report the general health of the device."""
-        print("=================== SERVE HEALTH")
         return json.dumps(self.health)
 
-    async def _serve_config(self, raw_data):
+    async def _serve_config(self, _, raw_data):
         """Receive and save config."""
-        print("=================== SERVE CONFIG", raw_data)
         # wifi (ssid y clave), ip del management node, nombre device, hora *posta*
         info = json.loads(raw_data)
 
@@ -138,19 +137,16 @@ class SystemBoard:
         - change button to callback to regular mode
         """
         logger.info("Entering Config mode")
-        await self._close_current_servers()
+        await self._stop_current_servers()
         self.status_led.set(True)
         self.power_led.start_blinking([500, 500])
         self.button.set_interrupt(200, self.enter_regular_mode)
-        print("=================== MODE CONFIG")
 
         # open wifi
         ssid = "Remex-" + machine.unique_id().hex()
         self.network_manager = NetworkManager()
         await self.network_manager.start_ap(ssid, "remex-config")
-        print("=================== wifi ok")
 
-        # views_handler = ViewsHandler(self.storage)
         callbacks = {
             "HEALTH": self._serve_health,
             "CONFIG": self._serve_config,
@@ -159,17 +155,11 @@ class SystemBoard:
         await self.protocol_server.listen(80)
         logger.info("Serving config")
 
-    async def _update_job(self, data):
-        """Receive a new job to run."""
-        print("=================== UPDATE JOB!!!", repr(data))
-
     async def enter_regular_mode(self):
         """Regular operation mode."""
         logger.info("Entering Regular mode")
-        await self._close_current_servers()
-        self.button.set_interrupt(2500, self.enter_config_mode)
-
-        print("=================== MODE REGULAR")
+        await self._stop_current_servers()
+        self.button.set_interrupt(2000, self.enter_config_mode)
 
         # get required info from the config
         if not self.config.exists():
@@ -191,17 +181,17 @@ class SystemBoard:
         logger.debug("Connecting to WiFi")
         self.network_manager = NetworkManager()
         try:
-            await self.network_manager.start_ap(info["wifi_ssid"], info["wifi_password"])
+            await self.network_manager.connect(info["wifi_ssid"], info["wifi_password"])
         except Exception as exc:
             self.power_led.start_blinking(BLINK_POWER_PANIC)
             self.status_led.start_blinking(BLINK_STATUS_BAD_WIFI)
-            logger.error("Problem starting the AP: {!r}", exc)
+            logger.error("Problem connecting to WiFi: {!r}", exc)
             return
 
         logger.debug("Connecting to Management node")
         client = ProtocolClient(info["name"], callbacks={"UPDATE-JOB": self._update_job})
         try:
-            await client.connect(info["management_node_ip"], 443)
+            await client.connect(info["management_node_ip"], 7739)
         except Exception as exc:
             self.power_led.start_blinking(BLINK_POWER_PANIC)
             self.status_led.start_blinking(BLINK_STATUS_BAD_CONNECTION)
@@ -218,6 +208,59 @@ class SystemBoard:
         # all good, set leds to indicate the device is up and running just fine
         self.status_led.set(False)
         self.power_led.start_blinking(BLINK_POWER_OK)
+
+    async def _update_job(self, code):
+        """Receive a new job to run."""
+        print("=================== UPDATE JOB!!!", repr(code))
+        logger.info("Updating job", len(code))
+        switch_status = dict.fromkeys(("stopped", "setup", "started"))
+
+        if self.current_job is not None:
+            logger.info("Stopping job")
+            tini = time.ticks_ms()
+            try:
+                await self.current_job.stop()
+            except Exception as exc:
+                error = repr(exc)
+                logger.error("Stopped in error: {!r}", exc)
+            else:
+                error = None
+                logger.info("Stopped ok")
+            tend = time.ticks_ms()
+            switch_status["stopped"] = {"error": error, "delay_ms": tend - tini}
+
+        logger.info("Setting up job")
+        tini = time.ticks_ms()
+        try:
+            fake_module = {}
+            exec(code, fake_module)
+            Job = fake_module["MainJob"]
+            self.current_job = Job()
+        except Exception as exc:
+            error = repr(exc)
+            logger.error("Setting up ended in error: {!r}", exc)
+        else:
+            error = None
+            logger.info("Set up ok")
+        tend = time.ticks_ms()
+        switch_status["setup"] = {"error": error, "delay_ms": tend - tini}
+
+        if not error:
+            # only start the job if the set up was ok
+            logger.info("Starting job")
+            tini = time.ticks_ms()
+            try:
+                await self.current_job.start()
+            except Exception as exc:
+                error = repr(exc)
+                logger.error("Started in error: {!r}", exc)
+            else:
+                error = None
+                logger.info("Started ok")
+            tend = time.ticks_ms()
+            switch_status["started"] = {"error": error, "delay_ms": tend - tini}
+
+        return switch_status
 
 
 system_board = SystemBoard()

@@ -92,34 +92,12 @@ Note that if any problem is found in a "normal operation" while the device is co
 
 
 
-# How To Use
-
-#
-
-
 ## TODO
 
-- script to connect to node, ask health, sets config (wifi data, and ManagNode location)
-- make it work to get out of config; report to the node that is switching (before doing so), connect and report back to the ManagNode
-- now in "regular" we should see reports to ManagNode
-- this should support reboots
-- Implement "orders" (as responses in those reports); first just prints received stuff
-- Implement "set time", always returned
+- Implement "set time", always returned from checkin
 - support sending back new software; the device should get it, save it, import it, run "run()" inside
-
-
-#
-# Config dialog:
-# - el cliente busca la red; encuentra Remex-*, se conecta (passw remex-config), connect al prto 80
-#        puede recibir el nombre de la red de afuera (para no necesitar sudo)
-# - escribe HEALTH
-#     - escuchar reporte en json, un dict, muestra items
-# - escribe CONFIG -- wifi (ssid y clave), ip del management node, nombre device
-#     - escucha OK
-# - escribe CHAU
-#    - valida UAHC
-#    (y se cierra la conexión)
-
-# set of pure send/receive functions; these do not depend on any state
-
-
+    - set code
+    - get code
+- the device should heartbeat to the server
+    - send health
+    - if connection breaks, starts to loop to reconnet

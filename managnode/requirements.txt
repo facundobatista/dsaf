@@ -1,1 +1,3 @@
+aiosqlite
 quart
+sqlalchemy
