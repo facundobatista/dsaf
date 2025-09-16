@@ -94,7 +94,6 @@ Note that if any problem is found in a "normal operation" while the device is co
 
 ## TODO
 
-- Implement "set time", always returned from checkin
 - support sending back new software; the device should get it, save it, import it, run "run()" inside
     - set code
     - get code

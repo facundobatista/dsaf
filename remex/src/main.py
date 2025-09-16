@@ -10,11 +10,12 @@ import time
 
 import machine
 
-from lib.comms import ProtocolServer, ProtocolClient, STATUS_OK
 from lib import logger
+from lib.comms import ProtocolServer, ProtocolClient, STATUS_OK
+from lib.time_utils import get_gmtime_as_dict, set_time_from_dict, nice_time
 from src.button import Button
-from src.outputs import Led
 from src.networkmanager import NetworkManager
+from src.outputs import Led
 
 # used pins
 PIN_FLASH_BUTTON = 0
@@ -107,7 +108,7 @@ class SystemBoard:
     def health(self):
         """Build a set of data representing the status of the device/framework."""
         mem_free = gc.mem_free()
-        current_time = time.gmtime()
+        current_time = get_gmtime_as_dict()
         configured = self.config.exists()
         return dict(mem_free=mem_free, current_time=current_time, configured=configured)
 
@@ -120,10 +121,7 @@ class SystemBoard:
         # wifi (ssid y clave), ip del management node, nombre device, hora *posta*
         info = json.loads(raw_data)
 
-        # set microcontroller's time
-        time_tuple = info.pop("current_time_tuple")[:8]  # discard DST, if came
-        rtc = machine.RTC()
-        rtc.datetime(time_tuple)
+        set_time_from_dict(info.pop("current_time"))
 
         # check arrived info and save config
         assert set(info) == {"wifi_ssid", "wifi_password", "management_node_ip", "name"}
@@ -204,6 +202,8 @@ class SystemBoard:
             self.status_led.start_blinking(BLINK_STATUS_REJECTED)
             logger.error("Failed to check in; response: {!r}", content)
             return
+        info = json.loads(content)
+        set_time_from_dict(info["current_time"])
 
         # all good, set leds to indicate the device is up and running just fine
         self.status_led.set(False)
@@ -268,10 +268,10 @@ system_board = SystemBoard()
 
 async def run():
     logger.set_level(logger.DEBUG)
-    logger.info("Start, base mem: {} - time: {}", gc.mem_free(), time.gmtime())
+    logger.info("Start, base mem: {} - datetime: {}", gc.mem_free(), nice_time())
     await system_board.run()
 
 
 def breath():
     gc.collect()
-    logger.debug("Breathing... free mem: {} - time: {}", gc.mem_free(), time.gmtime())
+    logger.debug("Breathing... free mem: {} - datetime: {}", gc.mem_free(), nice_time())

@@ -10,6 +10,7 @@ import subprocess
 import time
 
 from lib.comms import ProtocolClient, STATUS_OK
+from lib.time_utils import get_gmtime_as_dict
 
 DEVICE_AP_CONFIG_PASSWORD = "remex-config"
 DEVICE_SSID_PREFIX = "Remex-"
@@ -166,7 +167,7 @@ async def configure(config_payload, device_ip):
     print("Response:", json.loads(content))
 
     # set timestamp as close as we can of sending the message
-    config_payload["current_time_tuple"] = time.gmtime()
+    config_payload["current_time"] = get_gmtime_as_dict()
 
     print("Configuring the device")
     status, content = await client.request("CONFIG", json.dumps(config_payload))

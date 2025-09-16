@@ -13,6 +13,7 @@ from sqlalchemy.exc import NoResultFound
 
 from db import AsyncSession, init_db, Device
 from lib.comms import ProtocolServer
+from lib.time_utils import get_gmtime_as_dict
 
 app = Quart(__name__)
 
@@ -96,6 +97,9 @@ async def serve_check_in(client_name, data):
     health = json.loads(data)
     await _save_device_health(client_name, health)
 
+    # return the current time to keep the device updated
+    return json.dumps({"current_time": get_gmtime_as_dict()})
+
 
 async def start_devices_server():
     """Set up and start the communications Server which handles the devices' connections."""
@@ -125,7 +129,7 @@ async def startup():
 @app.after_serving
 async def shutdown():
     server = app.config["ProtocolServer"]
-    server.stop()
+    await server.stop()
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0")
