@@ -15,9 +15,7 @@ To sync all code to device:
 ```
 fades -d adafruit-ampy -x ampy --port /dev/ttyUSB0 --baud 115200 ls
 fades -d adafruit-ampy -x ampy --port /dev/ttyUSB0 --baud 115200 put main.py
-
-
-
+```
 
 To connect to the device manually:
 ```
@@ -38,6 +36,18 @@ The leds represents the status of the device, and the button allows special inte
 When booting the device, the Status led will blink fast once and then twice to indicate that the Remex Framework is loaded (don't confuse it with double fast blink done in the Power led by the bootloader).
 
 After booting, if configuration is saved, it will automatically enter into Regular Mode. If configuration is missing, corrupt, or wrong, it will switch to panic mode. From Regular or Panic modes the device can be moved to Configuration Mode by leaving the the button pressed for two seconds.
+
+In Regular Mode the device will run user's code and report status periodically to the Management Node. The user's code must be a single file with an async function called `run` as entry point. E.g.:
+
+```
+import asyncio
+
+
+async def run():
+    while True:
+        print("Hello world!")
+        await asyncio.sleep(2)
+```
 
 
 ## Execution Modes
@@ -89,14 +99,3 @@ The quantity of fast blinks in the Status led indicates the problem found (liste
 In each case the framework will also log internally what happened.
 
 Note that if any problem is found in a "normal operation" while the device is connected to the Management Node, the device will be in Regular Mode and will just inform the failures to the Management Node.
-
-
-
-## TODO
-
-- support sending back new software; the device should get it, save it, import it, run "run()" inside
-    - set code
-    - get code
-- the device should heartbeat to the server
-    - send health
-    - if connection breaks, starts to loop to reconnet

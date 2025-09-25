@@ -7,7 +7,7 @@ import asyncio
 import datetime
 import json
 
-from quart import Quart, request, abort, jsonify
+from quart import Quart, request, jsonify, abort
 from sqlalchemy import select
 from sqlalchemy.exc import NoResultFound
 
@@ -39,28 +39,40 @@ async def health(name):
         try:
             device = result.scalars().one()
         except NoResultFound:
-            abort(404)
+            return abort(404, "Device name not found")
 
     return jsonify(device.to_dict())
+
+
+async def _push_to_device(*args):
+    """Run a method in the device."""
+    server = app.config["ProtocolServer"]
+    try:
+        response = await server.push(*args)
+    except KeyError:
+        # client not found
+        raise abort(404, "Device not currently connected")
+    except RuntimeError as err:
+        # problem dealing with the client
+        return abort(502, str(err))
+
+    return response
 
 
 @app.route("/v1/device/<string:name>/code", methods=["GET"])
 async def get_code(name):
     """Return the code that is being executed in the device."""
-    print("======= get code from the device", repr(name))
-    FIXME
-    return "FIXME"
+    response = await _push_to_device(name, "GET-JOB")
+    return response
 
 
 @app.route("/v1/device/<string:name>/code", methods=["POST"])
 async def set_code(name):
     """Set code to be executed in the device."""
-    print("======= push code to the device", repr(name))
     content = await request.get_data()
-    print("======= data", repr(content))
-    server = app.config["ProtocolServer"]
-    server.push(name, "UPDATE-JOB", content)
-    return
+    response = await _push_to_device(name, "UPDATE-JOB", content)
+    info = json.loads(response)
+    return jsonify(info), 201
 
 
 async def _save_device_health(client_name, health):
@@ -77,22 +89,29 @@ async def _save_device_health(client_name, health):
 
 async def serve_heartbeat(client_name, data):
     """Receive the heartbeat from devices."""
-    FIXME
+    app.logger.debug("Serve heartbeat %r %r", client_name, data)
+    health = json.loads(data)
+    await _save_device_health(client_name, health)
+
+    # return the current time to keep the device updated
+    return json.dumps({"current_time": get_gmtime_as_dict()})
 
 
 async def serve_check_in(client_name, data):
     """Handle the check in from devices."""
-    print("============= check in", client_name, repr(data))
+    app.logger.debug("Serve checkin %r %r", client_name, data)
     async with AsyncSession() as session:
         stmt = select(Device).where(Device.name == client_name)
         result = await session.execute(stmt)
         try:
             result.scalars().one()
         except NoResultFound:
-            app.logger.info("Client %r checking in for the first time.", client_name)
+            app.logger.info("Client %r checking in (for the first time)", client_name)
             device = Device(name=client_name)
             session.add(device)
             await session.commit()
+        else:
+            app.logger.info("Client %r checking in", client_name)
 
     health = json.loads(data)
     await _save_device_health(client_name, health)
@@ -128,8 +147,9 @@ async def startup():
 
 @app.after_serving
 async def shutdown():
+    app.logger.info("Shutting down")
     server = app.config["ProtocolServer"]
-    await server.stop()
+    await server.close()
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0")

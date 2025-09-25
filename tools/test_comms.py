@@ -5,11 +5,11 @@
 
 Should be used from command line; on one terminal run the server:
 
-    PYTHONPATH=. python3 src/comms.py server <port>
+    PYTHONPATH=. python3 tools/test_comms.py server <port>
 
 In other terminal run the client
 
-    PYTHONPATH=. python3 src/comms.py client <host> <port> <method> <string>
+    PYTHONPATH=. python3 tools/test_comms.py client <host> <port> <method> <string>
 
 To play with this, the server supports a method LEN that gives the length of the string, STATS to
 count how many different letters it has, and ECHO to test future callback from the server.
@@ -21,8 +21,8 @@ import logging
 import sys
 from collections import Counter
 
-from comms import ProtocolServer, ProtocolClient, STATUS_OK
-from comms import logger
+from lib.comms import ProtocolServer, ProtocolClient, STATUS_OK
+from lib.comms import logger
 
 logger.set_level(logging.DEBUG)
 
@@ -31,7 +31,7 @@ DEVICE_NAME = "testdevice-123"
 
 async def _client_len(host, port, payload):
     client = ProtocolClient(DEVICE_NAME)
-    await client.connect(host, port)
+    xr, xw = await client.connect(host, port)
     status, content = await client.request("LEN", payload.encode("utf8"))
     assert status == STATUS_OK
     print("Response:", content)
@@ -78,25 +78,29 @@ def _run_client(host, port, method, payload):
 def _run_server(port):
     """Run the server when exercising the module from command line."""
 
-    async def _count(text):
+    async def _count(client_name, text):
         """Count how many of each character the string has."""
         cnt = Counter(text.decode("utf8"))
         return json.dumps(cnt.most_common())
 
-    async def _len(text):
+    async def _len(client_name, text):
         """Len of the string."""
         return str(len(text))
 
-    async def _echo(text):
-        """Senf a future echo of the received text."""
-        server.push(DEVICE_NAME, "ECHO", text)
+    async def _echo(client_name, text):
+        """Send a future echo of the received text.
+
+        Need to defer it because otherwise it would be attempted to send a push to the client
+        in the middle of actually serving a request from the client...
+        """
+        asyncio.create_task(server.push(DEVICE_NAME, "ECHO", text))
 
     callbacks = {"LEN": _len, "STATS": _count, "ECHO": _echo}
     server = ProtocolServer(callbacks)
 
     print("Serving in port", port)
     loop = asyncio.new_event_loop()
-    loop.run_until_complete(server.start(port))
+    loop.run_until_complete(server.listen(port))
     try:
         loop.run_forever()
     except KeyboardInterrupt:

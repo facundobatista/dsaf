@@ -40,7 +40,21 @@ $ curl -s http://localhost:5000/v1/device/testdev/health | jq .
 
 - `POST /v1/device/<string:name>/code`: Set code to be executed in the device
 ```
-FIXME
+$ curl -s -X POST --data-binary @test-ej-code.py  http://localhost:5000/v1/device/testdev/code
+{
+  "setup": {
+    "delay_ms": 10,
+    "error": null
+  },
+  "started": {
+    "delay_ms": 3,
+    "error": null
+  },
+  "stopped": {
+    "delay_ms": 3,
+    "error": null
+  }
+}
 ```
 
 - `GET /v1/device/<string:name>/code`: Return the code that is being executed in the device

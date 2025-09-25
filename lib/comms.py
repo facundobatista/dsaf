@@ -184,11 +184,18 @@ async def _handle_one_request(client, system_callbacks, user_callbacks):
         await _send_response(client.writer, STATUS_MISS, method_name)
         return False
 
+    # prepare the arguments
+    #  - if the client has a name, it's a real client into the server, so it's worth passing;
+    #    but if it's None then "client" is the server doing a push, so it's just noise
+    #  - if the method being call has any content to be delivered, use it
+    args = []
+    if client.name is not None:
+        args.append(client.name)
+    if content:
+        args.append(content)
+
     try:
-        if content:
-            response = await cb(client.name, content)
-        else:
-            response = await cb(client.name)
+        response = await cb(*args)
         if response is None:
             response = b""
         elif isinstance(response, str):
@@ -336,21 +343,22 @@ class ProtocolServer:
         self._system_callbacks = {
             b"HOLA": self._do_handshake,
             b"CHAU": self._do_teardown,
+            b"PING": self._do_ping,
             b"LOGIN": self._do_login,
             b"CALLBACK": self._do_register_callback,
         }
         self._tcp_server = None
         self._callback_clients = {}
 
-    async def _future_push(self, client_name, method, payload):
+    async def push(self, client_name, method, payload=b""):
         """Push a request to the client."""
         client = self._callback_clients.get(client_name, MISSING)
         if client is MISSING:
             logger.error("P.Server: cannot push, client {!r} is missing", client_name)
-            return False
+            raise KeyError("The client is missing")
         if client is None:
             logger.error("P.Server: cannot push, client {!r} is unidirectional", client_name)
-            return False
+            raise RuntimeError("The client is unidirectional")
 
         await _send_request(client.writer, method, payload)
 
@@ -358,15 +366,9 @@ class ProtocolServer:
         status, content = await _receive_response(client.reader)
         if status != STATUS_OK:
             logger.error("P.Server: bad response! status={[0]:x} content={!r}", status, content)
-            return False
-        return True
-
-    def push(self, client_name, method, payload):
-        """Program a push to the client in the future.
-
-        This function is not async; it just schedules the push for the future and promptly returns.
-        """
-        asyncio.create_task(self._future_push(client_name, method, payload))
+            raise RuntimeError(
+                f"Bad response from the device: status={status[0]:x} content={content!r}")
+        return content
 
     async def _do_handshake(self, client, payload):
         """Establish first communication with the client.
@@ -383,6 +385,13 @@ class ProtocolServer:
         """
         logger.debug("P.Server: client {} teardown", client.addr)
         return b"OK", True
+
+    async def _do_ping(self, client, _):
+        """Just pong back.
+
+        This is normally used only to check connection.
+        """
+        return b"PONG", False
 
     async def _do_login(self, client, payload):
         """Annotate the client.
@@ -425,10 +434,10 @@ class ProtocolServer:
         """Start serving."""
         self._tcp_server = await asyncio.start_server(self._handle_requests, "0.0.0.0", port)
 
-    async def stop(self):
-        """Stop the HTTP server."""
+    async def close(self):
+        """Close the HTTP server."""
         if self._tcp_server is None:
-            raise RuntimeError("Tried to stop a non existant server")
+            raise RuntimeError("Tried to close a non existant server")
 
         self._tcp_server.close()
         await self._tcp_server.wait_closed()
